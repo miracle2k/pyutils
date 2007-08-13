@@ -1,13 +1,11 @@
 """
     Python emumeration implementation.
 
-    From: http://www.python.org/doc/essays/metaclasses/Enum.py
-
+    Source:
+        http://svn.python.org/projects/python/trunk/Demo/newmetaclasses/Enum.py
 """
 
-import string
-
-class EnumMetaClass:
+class EnumMetaclass(type):
     """Metaclass for enumeration.
 
     To define your own enumeration, do something like
@@ -22,73 +20,50 @@ class EnumMetaClass:
 
     Enumerations cannot be instantiated; however they can be
     subclassed.
-
     """
 
-    def __init__(self, name, bases, dict):
-        """Constructor -- create an enumeration.
+    def __init__(cls, name, bases, dict):
+        super(EnumMetaclass, cls).__init__(name, bases, dict)
+        cls._members = []
+        for attr in dict.keys():
+            if not (attr.startswith('__') and attr.endswith('__')):
+                enumval = EnumInstance(name, attr, dict[attr])
+                setattr(cls, attr, enumval)
+                cls._members.append(attr)
 
-        Called at the end of the class statement.  The arguments are
-        the name of the new class, a tuple containing the base
-        classes, and a dictionary containing everything that was
-        entered in the class' namespace during execution of the class
-        statement.  In the above example, it would be {'red': 1,
-        'green': 2, 'blue': 3}.
-
-        """
-        for base in bases:
-            if base.__class__ is not EnumMetaClass:
-                raise TypeError, "Enumeration base class must be enumeration"
-        bases = filter(lambda x: x is not Enum, bases)
-        self.__name__ = name
-        self.__bases__ = bases
-        self.__dict = {}
-        for key, value in dict.items():
-            self.__dict[key] = EnumInstance(name, key, value)
-
-    def __getattr__(self, name):
-        """Return an enumeration value.
-
-        For example, Color.red returns the value corresponding to red.
-
-        XXX Perhaps the values should be created in the constructor?
-
-        This looks in the class dictionary and if it is not found
-        there asks the base classes.
-
-        The special attribute __members__ returns the list of names
-        defined in this class (it does not merge in the names defined
-        in base classes).
-
-        """
-        if name == '__members__':
-            return self.__dict.keys()
-
-        try:
-            return self.__dict[name]
-        except KeyError:
-            for base in self.__bases__:
-                try:
-                    return getattr(base, name)
-                except AttributeError:
-                    continue
-
+    def __getattr__(cls, name):
+        if name == "__members__":
+            return cls._members
         raise AttributeError, name
 
-    def __repr__(self):
-        s = self.__name__
-        if self.__bases__:
-            s = s + '(' + string.join(map(lambda x: x.__name__,
-                                          self.__bases__), ", ") + ')'
-        if self.__dict:
-            list = []
-            for key, value in self.__dict.items():
-                list.append("%s: %s" % (key, int(value)))
-            s = "%s: {%s}" % (s, string.join(list, ", "))
-        return s
+    def __repr__(cls):
+        s1 = s2 = ""
+        enumbases = [base.__name__ for base in cls.__bases__
+                     if isinstance(base, EnumMetaclass) and not base is Enum]
+        if enumbases:
+            s1 = "(%s)" % ", ".join(enumbases)
+        enumvalues = ["%s: %d" % (val, getattr(cls, val))
+                      for val in cls._members]
+        if enumvalues:
+            s2 = ": {%s}" % ", ".join(enumvalues)
+        return "%s%s%s" % (cls.__name__, s1, s2)
 
+class FullEnumMetaclass(EnumMetaclass):
+    """Metaclass for full enumerations.
 
-class EnumInstance:
+    A full enumeration displays all the values defined in base classes.
+    """
+
+    def __init__(cls, name, bases, dict):
+        super(FullEnumMetaclass, cls).__init__(name, bases, dict)
+        for obj in cls.__mro__:
+            if isinstance(obj, EnumMetaclass):
+                for attr in obj._members:
+                    # XXX inefficient
+                    if not attr in cls._members:
+                        cls._members.append(attr)
+
+class EnumInstance(int):
     """Class to represent an enumeration value.
 
     EnumInstance('Color', 'red', 12) prints as 'Color.red' and behaves
@@ -96,32 +71,27 @@ class EnumInstance:
 
     XXX Should it record the actual enumeration rather than just its
     name?
-
     """
+
+    def __new__(cls, classname, enumname, value):
+        return int.__new__(cls, value)
 
     def __init__(self, classname, enumname, value):
         self.__classname = classname
         self.__enumname = enumname
-        self.__value = value
-
-    def __int__(self):
-        return self.__value
 
     def __repr__(self):
-        return "EnumInstance(%s, %s, %s)" % (`self.__classname`,
-                                             `self.__enumname`,
-                                             `self.__value`)
+        return "EnumInstance(%s, %s, %d)" % (self.__classname, self.__enumname,
+                                             self)
 
     def __str__(self):
         return "%s.%s" % (self.__classname, self.__enumname)
 
-    def __cmp__(self, other):
-        return cmp(self.__value, int(other))
+class Enum:
+    __metaclass__ = EnumMetaclass
 
-
-# Create the base class for enumerations.
-# It is an empty enumeration.
-Enum = EnumMetaClass("Enum", (), {})
+class FullEnum:
+    __metaclass__ = FullEnumMetaclass
 
 def _test():
 
@@ -131,8 +101,8 @@ def _test():
         blue = 3
 
     print Color.red
-    print dir(Color)
 
+    print repr(Color.red)
     print Color.red == Color.red
     print Color.red == Color.blue
     print Color.red == 1
@@ -165,5 +135,48 @@ def _test():
     print OtherColor
     print MergedColor
 
+def _test2():
+
+    class Color(FullEnum):
+        red = 1
+        green = 2
+        blue = 3
+
+    print Color.red
+
+    print repr(Color.red)
+    print Color.red == Color.red
+    print Color.red == Color.blue
+    print Color.red == 1
+    print Color.red == 2
+
+    class ExtendedColor(Color):
+        white = 0
+        orange = 4
+        yellow = 5
+        purple = 6
+        black = 7
+
+    print ExtendedColor.orange
+    print ExtendedColor.red
+
+    print Color.red == ExtendedColor.red
+
+    class OtherColor(FullEnum):
+        white = 4
+        blue = 5
+
+    class MergedColor(Color, OtherColor):
+        pass
+
+    print MergedColor.red
+    print MergedColor.white
+
+    print Color
+    print ExtendedColor
+    print OtherColor
+    print MergedColor
+
 if __name__ == '__main__':
     _test()
+    _test2()
