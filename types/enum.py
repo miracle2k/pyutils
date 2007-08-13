@@ -98,12 +98,16 @@ class EnumInstance(int):
     def __repr__(self):
         return "EnumValue(%s, %s, %d)" % (self.__classname, self.__enumname, self)
 
-    # Use the integer value itself, or whatever is provided by base class.
+    # Use the integer value itself, or whatever is provided by the base class.
     # Orginally, this would return something like "Colors.red", but I found that
     # this makes usage more complex and I end up using a lot of typecasts ala 
-    # int(Colors.red).
-    #def __str__(self):
-    #    #return "%s.%s" % (self.__classname, self.__enumname)
+    # int(Colors.red). This string can now be accessed via name().
+    def __str__(self):
+        return str(self.value())
+    def name(self):    
+        return "%s.%s" % (self.__classname, self.__enumname)        
+    def value(self):
+        return int(self)
         
 # The actual enum class that you should descend from.
 class ValueEnum:              
