@@ -65,7 +65,7 @@ class EnumMetaclass(type):
     def __repr__(cls):
         s1 = s2 = ""
         enumbases = [base.__name__ for base in cls.__bases__
-                     if isinstance(base, EnumMetaclass) and not base is Enum]
+                     if isinstance(base, EnumMetaclass) and not base is ValueEnum]
         if enumbases:
             s1 = "(%s)" % ", ".join(enumbases)
         enumvalues = ["%s: %d" % (val, getattr(cls, val))
