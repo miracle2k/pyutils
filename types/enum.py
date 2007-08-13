@@ -1,7 +1,7 @@
 """
     Python emumeration implementation.
 
-    Source:
+    Based on code from:
         http://svn.python.org/projects/python/trunk/Demo/newmetaclasses/Enum.py
 """
 
@@ -35,6 +35,17 @@ class EnumMetaclass(type):
         if name == "__members__":
             return cls._members
         raise AttributeError, name
+        
+    def __setattr__(cls, name, value):
+        # do not allow changing of enum values at runtime
+        if hasattr(cls, name) and isinstance(getattr(cls, name), EnumInstance):
+            raise Exception('Enum values are immutable.')
+        else:
+            super(EnumMetaclass, cls).__setattr__(name, value)
+            
+    def __iter__(cls):
+        for item in cls.__members__:
+            yield getattr(cls, item)
 
     def __repr__(cls):
         s1 = s2 = ""
