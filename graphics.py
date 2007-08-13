@@ -1,5 +1,5 @@
 """
-    Graphic and Image related functionality for Pyhton
+    Graphic and Image related functionality for Pyhton.
 """
 
 import os
