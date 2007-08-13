@@ -22,7 +22,7 @@
             
     Examples:
     
-        print Color.red                         # Color.red
+        print Color.red                         # 1
         print Color.red == Color.red            # True
         print Color.red == Color.blue           # False
         print Color.red == 1                    # True
@@ -98,8 +98,12 @@ class EnumInstance(int):
     def __repr__(self):
         return "EnumValue(%s, %s, %d)" % (self.__classname, self.__enumname, self)
 
-    def __str__(self):
-        return "%s.%s" % (self.__classname, self.__enumname)  
+    # Use the integer value itself, or whatever is provided by base class.
+    # Orginally, this would return something like "Colors.red", but I found that
+    # this makes usage more complex and I end up using a lot of typecasts ala 
+    # int(Colors.red).
+    #def __str__(self):
+    #    #return "%s.%s" % (self.__classname, self.__enumname)
         
 # The actual enum class that you should descend from.
 class ValueEnum:              
