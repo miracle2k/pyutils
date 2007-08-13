@@ -1,27 +1,42 @@
 """
-    Python emumeration implementation.
+    Python emumeration implementations.
+"""
 
+"""
+    This implementation requires (or allows) the user to assign a value to each 
+    enum identifer manually. Example:
+    
+        class Color(Enum):
+            red = 1
+            green = 2
+            blue = 3
+    
+    Those enumerations cannot be instantiated; however they can be subclassed:
+    
+        class ExtendedColor(Color):
+            white = 0
+            orange = 4
+            yellow = 5
+            purple = 6
+            black = 7
+            
+    Examples:
+    
+        print Color.red                         # Color.red
+        print Color.red == Color.red            # True
+        print Color.red == Color.blue           # False
+        print Color.red == 1                    # True
+        print Color.red == 2                    # False
+        print Color.red == ExtendedColor.red    # True
+        print int(Color.red)                    # 1
+        for x in Color: print int(x)            # 1, 2, 3
+     
     Based on code from:
         http://svn.python.org/projects/python/trunk/Demo/newmetaclasses/Enum.py
 """
-
-class EnumMetaclass(type):
-    """Metaclass for enumeration.
-
-    To define your own enumeration, do something like
-
-    class Color(Enum):
-        red = 1
-        green = 2
-        blue = 3
-
-    Now, Color.red, Color.green and Color.blue behave totally
-    different: they are enumerated values, not integers.
-
-    Enumerations cannot be instantiated; however they can be
-    subclassed.
-    """
-
+# Base metaclass for this enum implementation; converts all the defined
+# members into EnumInstances.
+class EnumMetaclass(type):    
     def __init__(cls, name, bases, dict):
         super(EnumMetaclass, cls).__init__(name, bases, dict)
         cls._members = []
@@ -59,12 +74,9 @@ class EnumMetaclass(type):
             s2 = ": {%s}" % ", ".join(enumvalues)
         return "%s%s%s" % (cls.__name__, s1, s2)
 
-class FullEnumMetaclass(EnumMetaclass):
-    """Metaclass for full enumerations.
-
-    A full enumeration displays all the values defined in base classes.
-    """
-
+# Extended version of the metaclass that adds the base classes' members as well.
+# This is the default.
+class FullEnumMetaclass(EnumMetaclass):    
     def __init__(cls, name, bases, dict):
         super(FullEnumMetaclass, cls).__init__(name, bases, dict)
         for obj in cls.__mro__:
@@ -74,16 +86,8 @@ class FullEnumMetaclass(EnumMetaclass):
                     if not attr in cls._members:
                         cls._members.append(attr)
 
+# Represents a single enumeration value.
 class EnumInstance(int):
-    """Class to represent an enumeration value.
-
-    EnumInstance('Color', 'red', 12) prints as 'Color.red' and behaves
-    like the integer 12 when compared, but doesn't support arithmetic.
-
-    XXX Should it record the actual enumeration rather than just its
-    name?
-    """
-
     def __new__(cls, classname, enumname, value):
         return int.__new__(cls, value)
 
@@ -92,102 +96,75 @@ class EnumInstance(int):
         self.__enumname = enumname
 
     def __repr__(self):
-        return "EnumInstance(%s, %s, %d)" % (self.__classname, self.__enumname,
-                                             self)
+        return "EnumValue(%s, %s, %d)" % (self.__classname, self.__enumname, self)
 
     def __str__(self):
-        return "%s.%s" % (self.__classname, self.__enumname)
-
-class Enum:
-    __metaclass__ = EnumMetaclass
-
-class FullEnum:
+        return "%s.%s" % (self.__classname, self.__enumname)  
+        
+# The actual enum class that you should descend from.
+class ValueEnum:              
     __metaclass__ = FullEnumMetaclass
+  
+"""
+    This implementation does not allow the assignment of values for each identifer
+    of the enumeration. Instead, you just specify the required values:
+    
+        Days = Enum('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
+            
+    Examples:
+    
+        print Days
+        print Days.Mo
+        print Days.Fr
+        print Days.Mo < Days.Fr
+        print list(Days)
+        for each in Days:
+            print 'Day:', each
+     
+    Based on code from:
+        http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/413486
+"""  
+def HashEnum(*names):
+    ##assert names, "Empty enums are not supported" # <- Don't like empty enums? Uncomment!
 
-def _test():
+    class EnumClass(object):
+        __slots__ = names
+        def __iter__(self):
+            return iter(constants)
+        def __len__(self):
+            return len(constants)
+        def __getitem__(self, i): 
+            return constants[i]
+        def __repr__(self):
+            return 'Enum' + str(names)
+        def __str__(self):
+            return 'enum ' + str(constants)
 
-    class Color(Enum):
-        red = 1
-        green = 2
-        blue = 3
+    class EnumValue(object):
+        __slots__ = ('__value')
+        def __init__(self, value): self.__value = value
+        Value = property(lambda self: self.__value)
+        EnumType = property(lambda self: EnumType)
+        def __hash__(self):
+            return hash(self.__value)
+        def __cmp__(self, other):
+            # C fans might want to remove the following assertion
+            # to make all enums comparable by ordinal value {;))
+            assert self.EnumType is other.EnumType, "Only values from the same enum are comparable"
+            return cmp(self.__value, other.__value)
+        def __invert__(self):
+            return constants[maximum - self.__value]
+        def __nonzero__(self):
+            return bool(self.__value)
+        def __repr__(self):
+            return str(names[self.__value])
 
-    print Color.red
-
-    print repr(Color.red)
-    print Color.red == Color.red
-    print Color.red == Color.blue
-    print Color.red == 1
-    print Color.red == 2
-
-    class ExtendedColor(Color):
-        white = 0
-        orange = 4
-        yellow = 5
-        purple = 6
-        black = 7
-
-    print ExtendedColor.orange
-    print ExtendedColor.red
-
-    print Color.red == ExtendedColor.red
-
-    class OtherColor(Enum):
-        white = 4
-        blue = 5
-
-    class MergedColor(Color, OtherColor):
-        pass
-
-    print MergedColor.red
-    print MergedColor.white
-
-    print Color
-    print ExtendedColor
-    print OtherColor
-    print MergedColor
-
-def _test2():
-
-    class Color(FullEnum):
-        red = 1
-        green = 2
-        blue = 3
-
-    print Color.red
-
-    print repr(Color.red)
-    print Color.red == Color.red
-    print Color.red == Color.blue
-    print Color.red == 1
-    print Color.red == 2
-
-    class ExtendedColor(Color):
-        white = 0
-        orange = 4
-        yellow = 5
-        purple = 6
-        black = 7
-
-    print ExtendedColor.orange
-    print ExtendedColor.red
-
-    print Color.red == ExtendedColor.red
-
-    class OtherColor(FullEnum):
-        white = 4
-        blue = 5
-
-    class MergedColor(Color, OtherColor):
-        pass
-
-    print MergedColor.red
-    print MergedColor.white
-
-    print Color
-    print ExtendedColor
-    print OtherColor
-    print MergedColor
-
-if __name__ == '__main__':
-    _test()
-    _test2()
+    maximum = len(names) - 1
+    constants = [None] * len(names)
+    for i, each in enumerate(names):
+        val = EnumValue(i)
+        setattr(EnumClass, each, val)
+        constants[i] = val
+    constants = tuple(constants)
+    EnumType = EnumClass()
+    return EnumType
