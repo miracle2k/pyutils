@@ -494,13 +494,13 @@ def find_in_html(text, log=None):
 """
 def default_for_media_type(media_type, log=None):
     defaultencodings = {
-        _XML_APPLICATION_TYPE: u'utf-8',
-        _XML_TEXT_TYPE: u'ascii',
-        _HTML_TEXT_TYPE: u'iso-8859-1', # should be None?
-        _TEXT_TYPE: u'iso-8859-1', # should be None?
-        _OTHER_TYPE: None}
+        ContentTypes.XMLApplication: u'utf-8',
+        ContentTypes.XMLText: u'ascii',
+        ContentTypes.XMLText: u'iso-8859-1', # should be None?
+        ContentTypes.Text: u'iso-8859-1', # should be None?
+        ContentTypes.Unknown: None}
 
-    texttype = _getTextTypeByMediaType(media_type)
+    texttype = guess_content_by_mediatype(media_type)
     encoding = defaultencodings.get(texttype, None)
 
     if log:
