@@ -54,15 +54,18 @@ def get_caller(up=1):
 """
     Append a path to the system path. Can take multiple arguments, in the
     same way os.path.join() does. Relative paths are considered to be relative
-    to the calling module's filename.
+    to the calling module's filename (this can be changed by the "levels"
+    parameter - the default is "1" - each level is one level on the stack, to
+    find the module that will be used as a base for relative filenames).
 
     This is primarily useful if you want to include a module who's location
     in the filesystem you are aware of, say, two levels up.
 """
-def append_sys_path(*path):
-   dir = os.path.abspath(os.path.join(os.path.dirname(get_caller()[0]), *path))
-   if not dir in sys.path:
-     sys.path.append(dir)
+def append_sys_path(*path, **kwargs):
+    levels = kwargs.get('levels', 1)
+    dir = os.path.abspath(os.path.join(os.path.dirname(get_caller(up=levels)[0]), *path))
+    if not dir in sys.path:
+        sys.path.append(dir)
 
 """
     Compares two float values, and returns a boolean indicating whether they
@@ -88,3 +91,21 @@ def equal_floats(f1, f2, digits=11):
     import math
     threshold = 10**-digits
     return not (math.fabs(f1 - f2) > threshold)
+
+"""
+    Very useful for setting up standalone scripts that wish to make use of
+    a django environment. "settings_path" needs to be relative or absolute
+    path to the directory where you're projects settings.py is located.
+    Note that "relative" means in reference to the calling module.
+
+    Note that this function would maybe better fit into "djutils". However,
+    currently, that package *requires* a working django setup, so for now,
+    we put it here instead.
+"""
+def setup_django(settings_path):
+    from django.core.management import setup_environ
+    # add project to path
+    append_sys_path(settings_path, levels=2)
+    # import project and setup
+    import settings
+    setup_environ(settings)
