@@ -42,11 +42,11 @@ class GermanParserInfo(parserinfo):
            ("m", "Minute", "Minuten"),
            ("s", "Sekunde", "Sekunden")]
 
-    def __init__(self, parsers=[], *args, **kwargs):
-        self.dayfirst = True # set dayfirst by default for German
-        super(GermanParserInfo, self).__init__(*args, **kwargs)
+    # set dayfirst by default for German
+    def __init__(self, dayfirst=True, yearfirst=False):
+        super(GermanParserInfo, self).__init__(dayfirst=dayfirst, yearfirst=yearfirst)
 
-    # need to reimpleement this, as German weekdays in shortform are only
+    # need to reimplement this, as German weekdays in shortform are only
     # two characters long, and the superclass implementation has a hardcoded
     # requirement of at least 3.
     def weekday(self, name):
