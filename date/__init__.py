@@ -75,6 +75,22 @@ class MultiParserInfo(parserinfo):
             self.parsers.append(p)
         super(MultiParserInfo, self).__init__(*args, **kwargs)
 
+    # redirect dayfirst and yearfirst properties to the first parser
+    def get_dayfirst(self):
+        if len(self.parsers) > 0:
+            return self.parsers[0].dayfirst
+        return self._dayfirst
+    def set_dayfirst(self, value):
+        self._dayfirst = value
+    dayfirst = property(get_dayfirst, set_dayfirst)
+    def get_yearfirst(self):
+        if len(self.parsers) > 0:
+            return self.parsers[0].yearfirst
+        return self._yearfirst
+    def set_yearfirst(self, value):
+        self._yearfirst = value
+    yearfirst = property(get_yearfirst, set_yearfirst)
+
     # call a method on all the parsers and use the first return value that
     # evaluates to True. Otherwise, fall back to the implementation of
     # our superclass (which is the default parserinfo).
