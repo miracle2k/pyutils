@@ -28,7 +28,7 @@ class GermanParserInfo(parserinfo):
                 ("So", "Sonntag")]
     MONTHS   = [("Jan", "Januar"),
                 ("Feb", "Februar"),
-                ("Mär", "Mrz", "Mär"),
+                ("Mär", "Mrz", "März"),
                 ("Apr", "April"),
                 ("Mai", "Mai"),
                 ("Jun", "Juni"),
