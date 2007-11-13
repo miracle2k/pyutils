@@ -1,4 +1,4 @@
-# coding: utf-8
+# coding: iso-8859-1
 
 """
     parserinfo classes that need to be used with the python-dateutil
@@ -28,7 +28,7 @@ class GermanParserInfo(parserinfo):
                 ("So", "Sonntag")]
     MONTHS   = [("Jan", "Januar"),
                 ("Feb", "Februar"),
-                ("MÃ¤r", "MÃ¤rz"),  # TODO: this makes problems - why?
+                ("Mär", "Mrz", "Mär"),
                 ("Apr", "April"),
                 ("Mai", "Mai"),
                 ("Jun", "Juni"),
