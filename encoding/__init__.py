@@ -188,7 +188,7 @@ def detect(content=u'', response=None, log=None):
     else:
         ctype = guess_content(content)
 
-    # For XML content, try to find an encodingi n the content itself.
+    # For XML content, try to find an encoding in the content itself.
     if ctype == ContentTypes.XMLApplication or ctype == ContentTypes.XMLText:
         encinfo.xml_encoding = find_in_xml(content, log)
     # Attempt the same in HTML files, but unless XML, html defines no default, so
@@ -456,13 +456,14 @@ def find_in_xml(fp, log=None, fallback_to_default=True):
         charset=encoding"/>``
 """
 def find_in_html(text, log=None):
-    ctmetas = re.findall(ur'''<meta.*?
+    ctmetas = re.findall(ur'''(<meta ("[^"]+"|'[^"]+'|[^'">])*
             http-equiv\s* = \s*['"]\s*Content-Type\s*['"]\s*
-            .*?\/?>
+            .*?\/?>)
         ''', text, re.I|re.S|re.U|re.X)
 
+    media_type = encoding = None
     if ctmetas:
-        first = ctmetas[0]
+        first = ctmetas[0][0]
         value = re.findall(ur'''
                 content\s*=\s*  # content=
                 ['"]\s*         # " or '
@@ -479,8 +480,6 @@ def find_in_html(text, log=None):
                 log.debug(u'HTML <meta>: %s', value[0])
                 log.info(u'HTML META media_type: %s', media_type)
                 log.info(u'HTML META encoding: %s', encoding)
-    else:
-        media_type = encoding = None
 
     return media_type, encoding
 
