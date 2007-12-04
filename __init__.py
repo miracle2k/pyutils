@@ -109,3 +109,14 @@ def setup_django(settings_path):
     # import project and setup
     import settings
     setup_environ(settings)
+
+"""
+    Simply output a string to a file, overriding any existing content.
+    Useful for debugging.
+"""
+def strdump(str, filename):
+    file = open(filename, 'w+')
+    try:
+        file.write(str)
+    finally:
+        file.close()
