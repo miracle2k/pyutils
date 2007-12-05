@@ -5,8 +5,8 @@ from django.utils.encoding import force_unicode
 charrefpat = re.compile(r'&(#(\d+|x[\da-fA-F]+)|[\w.:-]+);?')
 def decode(text):
     """
-        Decode HTML entities in the given.
-        text should be a unicode string, as that is what insert.
+        Decode HTML entities in the given text.
+        text should be a unicode string, as that is what we insert.
 
         This is from:
             http://zesty.ca/python/scrape.py
@@ -38,16 +38,6 @@ def smart_strip_tags(text):
     result = re.sub(r'</?(div|br|p)[^>]*?>', ' ', force_unicode(text))
     return re.sub(r'<[^>]*?>', '', result)
 
-sanwhitespacepath = r"""(?mxu)
-    # spaces before a line - capture the linebreak in 1
-    (?:(^)+[\ \t]+)
-    |
-    # spaces after a line - capture the linebreak in 2
-    (?:[\ \t]+)($)
-    |
-    # multiple spaces within a line - capture the replacement space in 3
-    (?:([\ \t])[\ \t]+)
-"""
 def sanitize_whitespace(text):
     """
         * Replaces multiple space characters with a single one.
@@ -55,5 +45,14 @@ def sanitize_whitespace(text):
     """
     def repl(match): # avoid "unmatched group" error
         g = match.groups()
+        # basically "\1\2\3"
         return (g[0] or '') + (g[1] or '') + (g[2] or '')
-    return re.sub(sanwhitespacepath, repl, force_unicode(text))
+    return sanitize_whitespace.pattern.sub(repl, force_unicode(text))
+sanitize_whitespace.pattern = re.compile(r"""(?mxu)
+    # spaces before a line - capture the linebreak in 1
+    (^)[\ \t]+   |
+    # spaces after a line - capture the linebreak in 2
+    [\ \t]+($)   |
+    # multiple spaces within a line - capture the replacement space in 3
+    ([\ \t])[\ \t]+
+""")
