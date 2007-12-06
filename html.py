@@ -33,7 +33,7 @@ def smart_strip_tags(text):
     """
         Return the given HTML with all tags stripped. This is a version of the
         same function in django.utils.html, but attempts to insert spaces in
-        place of certain tags like br, div, p and the likes.
+        place of certain tags like br, div, p etc.
     """
     result = re.sub(r'</?(div|br|p)[^>]*?>', ' ', force_unicode(text))
     return re.sub(r'<[^>]*?>', '', result)
