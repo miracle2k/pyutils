@@ -43,16 +43,30 @@ def sanitize_whitespace(text):
         * Replaces multiple space characters with a single one.
         * Removes spaces spaces in front of and at the end of a line.
     """
-    def repl(match): # avoid "unmatched group" error
-        g = match.groups()
-        # basically "\1\2\3"
-        return (g[0] or '') + (g[1] or '') + (g[2] or '')
-    return sanitize_whitespace.pattern.sub(repl, force_unicode(text))
-sanitize_whitespace.pattern = re.compile(r"""(?mxu)
-    # spaces before a line - capture the linebreak in 1
-    (^)[\ \t]+   |
-    # spaces after a line - capture the linebreak in 2
-    [\ \t]+($)   |
+    def repl(match): # avoid "unmatched group" error - basically "\1\2"
+        return (match.groups()[0] or '') + (match.groups()[1] or '')
+    # we need to do this in two steps - first remove whitspace from line
+    # beginnings and in between text, then remove whitespace from the end
+    # of lines. if we combine the two regexes, consider what would happen
+    # in this case:
+    #    "a  \n b"
+    # first, the whitespace after 'a' would be removed by the "line end" regex.
+    # then, the regex would continue at the space character, which would not
+    # be removed (although it should), because the character that indicates the
+    # line break has already been removed by the engine. Now, there is probably
+    # a different approach we could take (match both in one regex), but what we
+    # have works good enough for now...
+    result = sanitize_whitespace.pattern1.sub(repl, force_unicode(text))
+    return sanitize_whitespace.pattern2.sub(r'\1', result)
+# pattern 1 - before and within a line
+sanitize_whitespace.pattern1 = re.compile(r"""(?xu)
+    # spaces before a line - capture the linebreak in 2
+    (^|\r\n|\r|\n)[\ \t]+ |
     # multiple spaces within a line - capture the replacement space in 3
     ([\ \t])[\ \t]+
+""")
+# pattern 2 - after a line
+sanitize_whitespace.pattern2 = re.compile(r"""(?xu)
+    # spaces after a line - capture the linebreak in 1
+    [\ \t]+(\r\n|\r|\n|$)
 """)
