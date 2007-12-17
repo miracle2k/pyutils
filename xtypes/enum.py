@@ -3,25 +3,25 @@
 """
 
 """
-    This implementation requires (or allows) the user to assign a value to each 
+    This implementation requires (or allows) the user to assign a value to each
     enum identifer manually. Example:
-    
+
         class Color(Enum):
             red = 1
             green = 2
             blue = 3
-    
+
     Those enumerations cannot be instantiated; however they can be subclassed:
-    
+
         class ExtendedColor(Color):
             white = 0
             orange = 4
             yellow = 5
             purple = 6
             black = 7
-            
+
     Examples:
-    
+
         print Color.red                         # 1
         print Color.red == Color.red            # True
         print Color.red == Color.blue           # False
@@ -30,13 +30,13 @@
         print Color.red == ExtendedColor.red    # True
         print int(Color.red)                    # 1
         for x in Color: print int(x)            # 1, 2, 3
-     
+
     Based on code from:
         http://svn.python.org/projects/python/trunk/Demo/newmetaclasses/Enum.py
 """
 # Base metaclass for this enum implementation; converts all the defined
 # members into EnumInstances.
-class EnumMetaclass(type):    
+class EnumMetaclass(type):
     def __init__(cls, name, bases, dict):
         super(EnumMetaclass, cls).__init__(name, bases, dict)
         cls._members = []
@@ -50,14 +50,20 @@ class EnumMetaclass(type):
         if name == "__members__":
             return cls._members
         raise AttributeError, name
-        
+
     def __setattr__(cls, name, value):
         # do not allow changing of enum values at runtime
         if hasattr(cls, name) and isinstance(getattr(cls, name), EnumInstance):
             raise Exception('Enum values are immutable.')
         else:
             super(EnumMetaclass, cls).__setattr__(name, value)
-            
+
+    def __getitem__(cls, key):
+        for m in cls._members:
+            if getattr(cls, m).value() == key:
+                return getattr(cls, m)
+        return None
+
     def __iter__(cls):
         for item in cls.__members__:
             yield getattr(cls, item)
@@ -76,7 +82,7 @@ class EnumMetaclass(type):
 
 # Extended version of the metaclass that adds the base classes' members as well.
 # This is the default.
-class FullEnumMetaclass(EnumMetaclass):    
+class FullEnumMetaclass(EnumMetaclass):
     def __init__(cls, name, bases, dict):
         super(FullEnumMetaclass, cls).__init__(name, bases, dict)
         for obj in cls.__mro__:
@@ -100,27 +106,27 @@ class EnumInstance(int):
 
     # Use the integer value itself, or whatever is provided by the base class.
     # Orginally, this would return something like "Colors.red", but I found that
-    # this makes usage more complex and I end up using a lot of typecasts ala 
+    # this makes usage more complex and I end up using a lot of typecasts ala
     # int(Colors.red). This string can now be accessed via name().
     def __str__(self):
         return str(self.value())
-    def name(self):    
-        return "%s.%s" % (self.__classname, self.__enumname)        
+    def name(self):
+        return "%s.%s" % (self.__classname, self.__enumname)
     def value(self):
         return int(self)
-        
+
 # The actual enum class that you should descend from.
-class ValueEnum:              
+class ValueEnum:
     __metaclass__ = FullEnumMetaclass
-  
+
 """
     This implementation does not allow the assignment of values for each identifer
     of the enumeration. Instead, you just specify the required values:
-    
+
         Days = Enum('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
-            
+
     Examples:
-    
+
         print Days
         print Days.Mo
         print Days.Fr
@@ -128,10 +134,10 @@ class ValueEnum:
         print list(Days)
         for each in Days:
             print 'Day:', each
-     
+
     Based on code from:
         http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/413486
-"""  
+"""
 def HashEnum(*names):
     ##assert names, "Empty enums are not supported" # <- Don't like empty enums? Uncomment!
 
@@ -141,7 +147,7 @@ def HashEnum(*names):
             return iter(constants)
         def __len__(self):
             return len(constants)
-        def __getitem__(self, i): 
+        def __getitem__(self, i):
             return constants[i]
         def __repr__(self):
             return 'Enum' + str(names)
