@@ -13,12 +13,12 @@
     to work.
 """
 
-from dateutil.parser import parserinfo
+from dateutil import parser
 
 __all__ = ['GermanParserInfo', 'MultiParserInfo']
 
 # Enable german dates
-class GermanParserInfo(parserinfo):
+class GermanParserInfo(parser.parserinfo):
     WEEKDAYS = [("Mo", "Montag"),
                 ("Di", "Dienstag"),
                 ("Mi", "Mittwoch"),
@@ -57,20 +57,22 @@ class GermanParserInfo(parserinfo):
                 pass
         return None
 
-# Allows to combine multiple parserinfo classes, if you need/want to support
-# different languages for example. Obviously, it needs to be passed as an
-# instance, so you can put the parserinfo's to use in the constructor.
-# Otherwise, only the default parserinfo will be used.
-#
-# Usage:
-#   MultiParserInfo(parsers=[FrenchParser, GermanParser()], param1, param2)
-#
-# As you can see, you can put both instances and classes in "parsers". If you
-# pass a class, an instance will be created using the other parameters you
-# gave to MultiParserInfo(). Some functionality, that can not reasonably be
-# expanded over multiple parsers will just use the very first one, so for those
-# cases order will have a limited effect.
-class MultiParserInfo(parserinfo):
+class MultiParserInfo(parser.parserinfo):
+    """
+    Allows to combine multiple parserinfo classes, if you need/want to support
+    different languages for example. Obviously, it needs to be passed as an
+    instance, so you can put the parserinfo's to use in the constructor.
+    Otherwise, only the default parserinfo will be used.
+
+    Usage:
+      MultiParserInfo(parsers=[FrenchParser, GermanParser()], param1, param2)
+
+    As you can see, you can put both instances and classes in "parsers". If you
+    pass a class, an instance will be created using the other parameters you
+    gave to MultiParserInfo(). Some functionality, that can not reasonably be
+    expanded over multiple parsers will just use the very first one, so for those
+    cases order will have a limited effect.
+    """
     def __init__(self, parsers=[], *args, **kwargs):
         import inspect
         self.parsers = []
@@ -140,3 +142,13 @@ class MultiParserInfo(parserinfo):
         # returns True. However, as that is usually the case (the default one
         # does, at least), most often only the first one is actually used.
         return self._try_all("validate", [res])
+
+def parse_de_date(str):
+    """
+    Simple shortcut to use the dateparser with our German parserinfo class.
+    Note that it tries to convert str to iso-8859-1, as this is the encoding
+    the dateutil parser uses (as does this file), and it's required to match
+    identifiers with special characters, like "März".
+    """
+    return parser.parse(str.encode('iso-8859-1', 'replace'),
+        parserinfo=MultiParserInfo(parsers=[GermanParserInfo(dayfirst=True)]))
