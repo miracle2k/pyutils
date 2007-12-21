@@ -145,6 +145,6 @@ def print_r(obj, level=1, indent=' '*4):
             out(",\n")
         out((level-1)*indent+"}")
     else:
-        out("%s"%obj)
+        out("%s"%repr(obj))  # use repr() so we can output tuples
     # need a final linebreak at the very end for the root element
     if level==1: out("\n")
