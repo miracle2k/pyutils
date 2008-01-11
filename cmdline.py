@@ -1,6 +1,7 @@
 """
     Utilities for creating command line based scripts.
 """
+import sys
 
 def program(mainfunc):
     """
@@ -11,7 +12,6 @@ def program(mainfunc):
         if __name__ == '__main__':
             program(main)
     """
-    import sys
     sys.exit(mainfunc(sys.argv) or 0)
 
 class Options(object):
@@ -67,21 +67,23 @@ def support_headers(func):
                 _message_headers[header] = str
     return newfunc
 def verbose(str, depends=None):
-    if options.verbose: print str
+    if options.verbose: _print(str)
     return options.verbose
 verbose = support_headers(verbose)
 def message(str, depends=None, header=None):
-    if not options.quiet: print str
+    if not options.quiet: _print(str)
     return not options.quiet
 message = support_headers(message)
 def warning(str, depends=None):
-    print str
+    _print(str)
     return True
 warning = support_headers(warning)
 def error(str, depends=None):
-    print str
+    _print(str)
     return 1
 error = support_headers(error)
+def _print(str):
+    print str.encode(sys.stdout.encoding, "replace")
 
 """
     Utility function to print the help text of a script. The simpliest
