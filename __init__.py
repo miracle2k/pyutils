@@ -2,6 +2,7 @@ import os, sys
 
 __all__ = (
     'urljoin',
+    'urlarg'
     'get_caller',
     'append_sys_path',
     'equal_floats',
@@ -35,6 +36,62 @@ def urljoin(*args):
         joined = reduce(os.path.join, work)
 
     return joined.replace("\\", "/")
+
+def urlarg(url, name, value=None):
+    """
+    If ``name`` and ``value`` are set, the url will be returned in modified
+    form with the ``name`` query string parameter set to ``value``. If
+    ``value?`` is ``False``, an possibly existing ``name`` will be removed
+    instead.
+    
+    If ``value` is not passed, the value of the query string parameter
+    ``name`` in url is returned, or ``None`` if it doesn't exist.
+    
+    Querying:
+    >>> print urlarg('http://example.org/', 'x')
+    None
+    >>> urlarg('http://example.org/?x=1', 'x')
+    '1'
+    
+    Adding an argument:
+    >>> urlarg('http://example.org/', 'x', 5)
+    'http://example.org/?x=5'
+    
+    Changing an argument:
+    >>> urlarg('http://example.org/?x=1', 'x', 5)
+    'http://example.org/?x=5'
+    
+    Deleting  an argument:
+    >>> urlarg('http://example.org/?x=1', 'x', False)
+    'http://example.org/'
+    
+    Delete non-existent argument:
+    >>> urlarg('http://example.org/', 'x', False)
+    'http://example.org/'
+    
+    Set to empty string does not delete:
+    >>> urlarg('http://example.org/?x=3', 'x', '')
+    'http://example.org/?x='
+    
+    If a trailing slash is missing, none is added:
+    >>> urlarg('http://example.org/', 'x', 5)
+    'http://example.org/?x=5'
+    """
+    import cgi, urlparse, urllib
+    # parse the url and the query string part
+    url = [x for x in urlparse.urlparse(url)]
+    params = cgi.parse_qs(url[4], keep_blank_values=True)
+    # 'get' the param
+    if value is None:
+        result = params.get(name, None)
+        return result and result[0] or None
+    #'set' the param
+    else:
+        if value is not False: params.update({name: value})   # set
+        elif name in params: del params[name]    # delete
+        # re-encode the url and return
+        url[4] = urllib.urlencode(params, doseq=True)
+        return urlparse.urlunparse(url)
 
 def get_caller(up=1):
     """
@@ -148,3 +205,8 @@ def print_r(obj, level=1, indent=' '*4):
         out("%s"%repr(obj))  # use repr() so we can output tuples
     # need a final linebreak at the very end for the root element
     if level==1: out("\n")
+    
+# self-test
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
