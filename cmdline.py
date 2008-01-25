@@ -82,8 +82,9 @@ def error(str, depends=None):
     _print(str)
     return 1
 error = support_headers(error)
-def _print(str):
-    print str.encode(sys.stdout.encoding, "replace")
+def _print(s):
+    if isinstance(s, str): s = unicode(s, 'ascii', 'replace')
+    print s.encode(sys.stdout.encoding, "replace")
 
 """
     Utility function to print the help text of a script. The simpliest
