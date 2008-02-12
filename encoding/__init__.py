@@ -231,24 +231,25 @@ def detect(content=u'', response=None, log=None):
             encinfo.encoding =  default_by_media_type(encinfo.http_media_type)
 
     # Check for possible mismatches, e.g. if two possible encoding values
-    # from different sources contradict each other.
-    if encinfo.http_encoding and encinfo.xml_encoding and\
-       encinfo.http_encoding <> encinfo.xml_encoding:
-        encinfo.mismatch = True
-        log.warn(u'"%s" (HTTP) <> "%s" (XML) encoding mismatch' %
-                 (encinfo.http_encoding, encinfo.xml_encoding))
-    # HTTP + Meta
-    if encinfo.http_encoding and encinfo.meta_encoding and\
-         encinfo.http_encoding <> encinfo.meta_encoding:
-        encinfo.mismatch = True
-        log.warn(u'"%s" (HTTP) <> "%s" (HTML <meta>) encoding mismatch' %
-                 (encinfo.http_encoding, encinfo.meta_encoding))
-    # XML + Meta
-    if encinfo.xml_encoding and encinfo.meta_encoding and\
-         encinfo.xml_encoding <> encinfo.meta_encoding:
-        encinfo.mismatch = True
-        log.warn(u'"%s" (XML) <> "%s" (HTML <meta>) encoding mismatch' %
-                 (encinfo.xml_encoding, encinfo.meta_encoding))
+    # from different sources contradict each other, and log a warning if so.
+    if log:
+        if encinfo.http_encoding and encinfo.xml_encoding and\
+           encinfo.http_encoding <> encinfo.xml_encoding:
+            encinfo.mismatch = True
+            log.warn(u'"%s" (HTTP) <> "%s" (XML) encoding mismatch' %
+                     (encinfo.http_encoding, encinfo.xml_encoding))
+        # HTTP + Meta
+        if encinfo.http_encoding and encinfo.meta_encoding and\
+             encinfo.http_encoding <> encinfo.meta_encoding:
+            encinfo.mismatch = True
+            log.warn(u'"%s" (HTTP) <> "%s" (HTML <meta>) encoding mismatch' %
+                     (encinfo.http_encoding, encinfo.meta_encoding))
+        # XML + Meta
+        if encinfo.xml_encoding and encinfo.meta_encoding and\
+             encinfo.xml_encoding <> encinfo.meta_encoding:
+            encinfo.mismatch = True
+            log.warn(u'"%s" (XML) <> "%s" (HTML <meta>) encoding mismatch' %
+                     (encinfo.xml_encoding, encinfo.meta_encoding))
 
     # We're done. Add a final log entry, then return our result object
     if log:
