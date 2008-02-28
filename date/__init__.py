@@ -1,24 +1,24 @@
 # coding: iso-8859-1
-
 """
-    parserinfo classes that need to be used with the python-dateutil
-    library from:
+parserinfo classes that need to be used with the python-dateutil
+library from:
+    http://labix.org/python-dateutil
 
-        http://labix.org/python-dateutil
+Pass them to the dateutil.parser.parse() function to modify the parsing 
+behaviour.
 
-    Pass them to the dateutil.parser.parse() function to modify the parsing
-    behaviour.
-
-    Note: They both require the patch (dateutil-parserinfo-override.diff)
-    to work.
+Note: Versions older then 1.3 are broken when it comes to hanling 
+custom parser infos.
 """
 
 from dateutil import parser
 
 __all__ = ['GermanParserInfo', 'MultiParserInfo']
 
-# Enable german dates
 class GermanParserInfo(parser.parserinfo):
+    """
+    Enable german dates.
+    """
     WEEKDAYS = [("Mo", "Montag"),
                 ("Di", "Dienstag"),
                 ("Mi", "Mittwoch"),
@@ -41,15 +41,19 @@ class GermanParserInfo(parser.parserinfo):
     HMS = [("h", "Stunde", "Stunden"),
            ("m", "Minute", "Minuten"),
            ("s", "Sekunde", "Sekunden")]
-
-    # set dayfirst by default for German
+    
     def __init__(self, dayfirst=True, yearfirst=False):
+        """
+        set dayfirst by default for German.
+        """
         super(GermanParserInfo, self).__init__(dayfirst=dayfirst, yearfirst=yearfirst)
 
-    # need to reimplement this, as German weekdays in shortform are only
-    # two characters long, and the superclass implementation has a hardcoded
-    # requirement of at least 3.
     def weekday(self, name):
+        """
+        Need to reimplement this, as German weekdays in shortform are only
+        two characters long, and the superclass implementation has a hardcoded
+        requirement of at least 3.
+        """
         if len(name) >= 2:
             try:
                 return self._weekdays[name.lower()]
@@ -97,10 +101,12 @@ class MultiParserInfo(parser.parserinfo):
         self._yearfirst = value
     yearfirst = property(get_yearfirst, set_yearfirst)
 
-    # call a method on all the parsers and use the first return value that
-    # evaluates to True. Otherwise, fall back to the implementation of
-    # our superclass (which is the default parserinfo).
     def _try_all(self, method, args):
+        """
+        Ccall a method on all the parsers and use the first return value that
+        evaluates to ``True``. Otherwise, fall back to the implementation of
+        our superclass (which is the default ``parserinfo``).
+        """
         for p in self.parsers:
             result = getattr(p, method)(*args)
             # do allow result==0, as this is a valid return value from tzoffset()
