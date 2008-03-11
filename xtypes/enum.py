@@ -1,8 +1,9 @@
 """
-    Python emumeration implementations.
+Python emumeration implementations.
 """
 
-"""
+class EnumMetaclass(type):
+    """
     This implementation requires (or allows) the user to assign a value to each
     enum identifer manually. Example:
 
@@ -33,10 +34,7 @@
 
     Based on code from:
         http://svn.python.org/projects/python/trunk/Demo/newmetaclasses/Enum.py
-"""
-# Base metaclass for this enum implementation; converts all the defined
-# members into EnumInstances.
-class EnumMetaclass(type):
+    """
     def __init__(cls, name, bases, dict):
         super(EnumMetaclass, cls).__init__(name, bases, dict)
         cls._members = []
@@ -80,9 +78,11 @@ class EnumMetaclass(type):
             s2 = ": {%s}" % ", ".join(enumvalues)
         return "%s%s%s" % (cls.__name__, s1, s2)
 
-# Extended version of the metaclass that adds the base classes' members as well.
-# This is the default.
 class FullEnumMetaclass(EnumMetaclass):
+    """
+    Extended version of the metaclass that adds the base classes' members as
+    well. This is the default.
+    """
     def __init__(cls, name, bases, dict):
         super(FullEnumMetaclass, cls).__init__(name, bases, dict)
         for obj in cls.__mro__:
@@ -92,8 +92,10 @@ class FullEnumMetaclass(EnumMetaclass):
                     if not attr in cls._members:
                         cls._members.append(attr)
 
-# Represents a single enumeration value.
 class EnumInstance(int):
+    """
+    Represents a single enumeration value.
+    """
     def __new__(cls, classname, enumname, value):
         return int.__new__(cls, value)
 
@@ -104,22 +106,33 @@ class EnumInstance(int):
     def __repr__(self):
         return "EnumValue(%s, %s, %d)" % (self.__classname, self.__enumname, self)
 
-    # Use the integer value itself, or whatever is provided by the base class.
-    # Orginally, this would return something like "Colors.red", but I found that
-    # this makes usage more complex and I end up using a lot of typecasts ala
-    # int(Colors.red). This string can now be accessed via name().
     def __str__(self):
+        """
+        Use the integer value itself, or whatever is provided by the base
+        class. Orginally, this would return something like ``Colors.red``, but
+        I found that this makes usage more complex and I end up using a lot of
+        typecasts ala ``int(Colors.red)``. This string can now be accessed via
+        ``name()``.
+        """
         return str(self.value())
     def name(self):
         return "%s.%s" % (self.__classname, self.__enumname)
     def value(self):
         return int(self)
-
-# The actual enum class that you should descend from.
+    
 class ValueEnum:
+    """
+    The actual enum class that you should descend from.
+    """
     __metaclass__ = FullEnumMetaclass
+    
+    
+################################################################################
+################################################################################
+################################################################################
 
-"""
+def HashEnum(*names):
+    """
     This implementation does not allow the assignment of values for each identifer
     of the enumeration. Instead, you just specify the required values:
 
@@ -137,8 +150,7 @@ class ValueEnum:
 
     Based on code from:
         http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/413486
-"""
-def HashEnum(*names):
+    """
     ##assert names, "Empty enums are not supported" # <- Don't like empty enums? Uncomment!
 
     class EnumClass(object):
