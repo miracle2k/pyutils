@@ -84,6 +84,8 @@ def error(str, depends=None):
 error = support_headers(error)
 def _print(s):
     if isinstance(s, str): s = unicode(s, 'ascii', 'replace')
+    elif isinstance(s, basestring): pass
+    else: s = u"%s"%s
     print s.encode(sys.stdout.encoding, "replace")
 
 """
