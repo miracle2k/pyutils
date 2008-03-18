@@ -86,7 +86,8 @@ def _print(s):
     if isinstance(s, str): s = unicode(s, 'ascii', 'replace')
     elif isinstance(s, basestring): pass
     else: s = u"%s"%s
-    print s.encode(sys.stdout.encoding, "replace")
+    encoding = sys.stdout.encoding or "ascii"
+    print s.encode(encoding, "replace")
 
 """
     Utility function to print the help text of a script. The simpliest
