@@ -159,23 +159,35 @@ def equal_floats(f1, f2, digits=11):
     threshold = 10**-digits
     return not (math.fabs(f1 - f2) > threshold)
 
-def setup_django(settings_path):
+def setup_django(settings_path=None):
     """
     Very useful for setting up standalone scripts that wish to make use of
-    a django environment. "settings_path" needs to be relative or absolute
-    path to the directory where you're projects settings.py is located.
-    Note that "relative" means in reference to the calling module.
+    a Django environment. ``settings_path`` needs to point to the directory
+    where you're project's ``settings.py`` is located, either as an absolute
+    path, or as relative path in reference to the module calling this function.
+    
+    If ``settings_path`` is not specified or ``False``, a fake settings module
+    will be setup. Note that while you'll then be able to work with certain
+    Django modules that require this, you're environment is still somewhat
+    limited - for example, we cannot put a project on the path in those cases,
+    obviously.
 
-    Note that this function would maybe better fit into "djutils". However,
-    currently, that package *requires* a working django setup, so for now,
-    we put it here instead.
+    Note that this would probably better fit into ``djutils``. However,
+    currently, that package *requires* a working django setup, so for now, we
+    put it here.
     """
-    from django.core.management import setup_environ
-    # add project to path
-    append_sys_path(settings_path, levels=2)
-    # import project and setup
-    import settings
-    setup_environ(settings)
+    if settings_path:
+        from django.core.management import setup_environ
+        append_sys_path(settings_path, levels=2)    # add project to path
+        import settings
+        setup_environ(settings)
+    else:
+        # create a dummy module; note we cannot use ``setup_environ`` as it
+        # expects a __file__ attribute on the module object.
+        import os, sys, types
+        settings_name = '%s_django_settings'%__name__
+        sys.modules[settings_name] = types.ModuleType(settings_name)
+        os.environ['DJANGO_SETTINGS_MODULE'] = settings_name
 
 def strdump(str, filename):
     """
