@@ -1,5 +1,5 @@
 """
-    Utilities for creating command line based scripts.
+Utilities for creating command line based scripts.
 """
 import sys
 
@@ -14,16 +14,36 @@ def program(mainfunc):
     """
     sys.exit(mainfunc(sys.argv) or 0)
 
-class Options(object):
+class Options(dict):
     """
     Some of the functionality in this module depends on "options", e.g. usually
     those are going to defined by script command line arguments. However, we do
     not deal with command line business, or argument parsing - do that any way
     you want. Just be sure to update these module-global options appropriately.
+    
+    >>> options = Options()
+    >>> options.doesnotexist == None
+    True
+    >>> options['doesnotexist'] == None
+    True
+    >>> options.value = 1
+    >>> print options.value
+    1
+    >>> options['x'] = 'abc'
+    >>> print options['x']
+    abc
+    >>> options.update({'foo': 'bar'})
+    >>> print options.foo
+    bar
     """
-    def __getattr__(self, name):
-        # resolve all non-existing attributes to None
-        return None
+    def __getitem__(self, key):
+        try: return super(Options, self).__getitem__(key)
+        except KeyError: return None # resolve non-existing values to ``None``
+    def __setitem__(self, key, value):
+        return super(Options, self).__setitem__(key, value)
+    # allow access via attributes
+    __getattr__ = __getitem__
+    __setattr__ = __setitem__
 options = Options()
 
 """
@@ -89,7 +109,8 @@ def _print(s):
     encoding = sys.stdout.encoding or "ascii"
     print s.encode(encoding, "replace")
 
-"""
+def help(docstr, scriptname=None):
+    """
     Utility function to print the help text of a script. The simpliest
     way to use this is to just ...
 
@@ -105,8 +126,7 @@ def _print(s):
     scriptname via introspection.
 
     Returns 1, so you can pass it on as an exit code.
-"""
-def help(docstr, scriptname=None):
+    """
     import os
     docstr = docstr.strip()
     if scriptname != False:
@@ -114,3 +134,7 @@ def help(docstr, scriptname=None):
         docstr %= {'scriptname': os.path.basename(scriptname)}
     print docstr
     return 1
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
