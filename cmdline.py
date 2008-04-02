@@ -86,19 +86,19 @@ def support_headers(func):
             if header:
                 _message_headers[header] = str
     return newfunc
-def verbose(str, depends=None):
+def verbose(str):
     if options.verbose: _print(str)
     return options.verbose
 verbose = support_headers(verbose)
-def message(str, depends=None, header=None):
+def message(str):
     if not options.quiet: _print(str)
     return not options.quiet
 message = support_headers(message)
-def warning(str, depends=None):
+def warning(str):
     _print(str)
     return True
 warning = support_headers(warning)
-def error(str, depends=None):
+def error(str):
     _print(str)
     return 1
 error = support_headers(error)
