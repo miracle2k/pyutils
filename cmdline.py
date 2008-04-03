@@ -1,7 +1,7 @@
 """
 Utilities for creating command line based scripts.
 """
-import sys
+import sys, types
 
 def program(mainfunc):
     """
@@ -35,7 +35,30 @@ class Options(dict):
     >>> options.update({'foo': 'bar'})
     >>> print options.foo
     bar
+    >>> class MyOptions(Options): predef = 99
+    >>>
+    >>> myoptions = MyOptions()
+    >>> print myoptions.predef
+    99
+    >>> print myoptions['predef']
+    99
     """
+    class __metaclass__(type):
+        def __new__(cls, name, bases, dict):
+            # convert attributes defined in the class at into dict items
+            items = {}
+            for name, value in dict.items():
+                if not (isinstance(value, types.FunctionType) or name.startswith('__')):
+                    items[name] = value
+                    del dict[name]
+            dict['__items__'] = items
+            self = type.__new__(cls, name, bases, dict)
+            return self
+    def __new__(cls, *args, **kwargs):
+        self = dict.__new__(cls, *args, **kwargs)
+        self.update(cls.__items__)
+        return self
+            
     def __getitem__(self, key):
         try: return super(Options, self).__getitem__(key)
         except KeyError: return None # resolve non-existing values to ``None``
