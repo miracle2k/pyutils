@@ -1,5 +1,12 @@
 import re
 
+__all__ = (
+    'strtr',
+    'ex2u',
+    'safmtb',
+    'safmt',
+)
+
 def strtr(dict, text):
     """
     Replace in 'text' all occurences of any key in the given dictionary by
@@ -12,6 +19,47 @@ def strtr(dict, text):
     regex = re.compile(u"(%s)" % "|".join(map(re.escape, dict.keys())))
     # For each match, look-up corresponding value in dictionary
     return regex.sub(lambda mo: dict[mo.string[mo.start():mo.end()]], text)
+
+def ex2u(exception):
+    """
+    Python exceptions (min. up to 2.5) have trouble with Unicode messages, see:
+        http://bugs.python.org/issue2517
+
+    This can make exception handling very tedious, if you cannot know what to
+    except: An exception object may contain a bytestring message, a unicode
+    message, or possibly no message at all (when passed multiple arguments).
+    Special exception classes may also choose to implement custom __str__ or
+    __unicode__ methods.
+
+    In fact, there doesn't appear to be a single way to access a unicode
+    message inside an exception by only converting the exception itself:
+    >> e = Exception(u'\xe4')
+    >> e.__str__()
+    <type 'exceptions.UnicodeEncodeError'> 'ascii' codec can't encode ...
+    >> e.__unicode__()
+    <type 'exceptions.AttributeError'> ...
+
+
+    This function attempts to help by trying a couple different ways to convert
+    the exception passed in to a unicode string - but is careful not to be too
+    liberal. You will still run into errors if you are using non-ascii
+    bytestrings, for example.
+
+    >>> ex2u(Exception('abc'))
+    u'abc'
+    >>> ex2u(Exception(u'abc'))
+    u'abc'
+    >>> ex2u(Exception(u'\xe4'))
+    u'\\xe4'
+    """
+    try:
+        return unicode(exception)
+    except UnicodeEncodeError, e:
+        if hasattr(exception, 'message'):
+            return unicode(exception.message)
+        # we had our shot
+        raise e
+
 
 """
 The following is an advanced string format implementation
@@ -117,3 +165,7 @@ def safmtb(template, args=(), kw=None, savepc=0, verb=0):
 # First argument must be the template
 def safmt(*args, **kw):
     return safmtb(args[0], args[1:], kw)
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
