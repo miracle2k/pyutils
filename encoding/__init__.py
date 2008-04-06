@@ -1,29 +1,29 @@
 """
-    Based on "encutils" by Christof Hoeke:
-        http://cthedot.de/encutils/
+Based on "encutils" by Christof Hoeke:
+    http://cthedot.de/encutils/
 
-    Licensed under Creative Commons:
-        http://creativecommons.org/licenses/by/3.0/
+Licensed under Creative Commons:
+    http://creativecommons.org/licenses/by/3.0/
 
-    Requires Python 2.3 or later.
+Requires Python 2.3 or later.
 
 
-    References
-    ==========
-    XML
-        RFC 3023 (http://www.ietf.org/rfc/rfc3023.txt)
+References
+==========
+XML
+    RFC 3023 (http://www.ietf.org/rfc/rfc3023.txt)
 
-        easier explained in
-            - http://feedparser.org/docs/advanced.html
-            - http://www.xml.com/pub/a/2004/07/21/dive.html
+    easier explained in
+        - http://feedparser.org/docs/advanced.html
+        - http://www.xml.com/pub/a/2004/07/21/dive.html
 
-    HTML
-        http://www.w3.org/TR/REC-html40/charset.html#h-5.2.2
+HTML
+    http://www.w3.org/TR/REC-html40/charset.html#h-5.2.2
 
-    TODO:
-        - HTML meta elements in comments? (use HTMLParser?)
-        - parse @charset of HTML elements?
-        - check for more texttypes if only text given
+TODO:
+    - HTML meta elements in comments? (use HTMLParser?)
+    - parse @charset of HTML elements?
+    - check for more texttypes if only text given
 """
 
 import cgi
@@ -95,7 +95,8 @@ class EncodingInfo(object):
                 self.__class__.__module__, self.__class__.__name__,
                 self.encoding, self.mismatch, id(self))
 
-"""
+def detect(content=u'', response=None, log=None):
+    """
     Finds all encoding related information in given ``text``.
     Uses information in headers of supplied HTTPResponse, possible XML
     declaration and X/HTML ``<meta>`` elements.
@@ -171,8 +172,7 @@ class EncodingInfo(object):
 
     Mismatch possibilities:
         - HTTP + HTMLmeta
-"""
-def detect(content=u'', response=None, log=None):
+    """
     # setup
     encinfo = EncodingInfo()
     #if not log:
@@ -257,7 +257,9 @@ def detect(content=u'', response=None, log=None):
                  encinfo.encoding, encinfo.mismatch)
     return encinfo
 
-"""
+def Log(logname='encutils', level='INFO', stream=sys.stderr, filename=None,
+              filemode="w", format='%(levelname)s\t%(message)s'):
+    """
     helper to build a basic log
 
     - if ``filename`` is given returns a log logging to ``filename`` with
@@ -267,9 +269,7 @@ def detect(content=u'', response=None, log=None):
     - ``format`` defines the formatter format of the log
 
     returns a log with the name ``logname``
-"""
-def Log(logname='encutils', level='INFO', stream=sys.stderr, filename=None,
-              filemode="w", format='%(levelname)s\t%(message)s'):
+    """
     import logging
 
     log = logging.getLogger(logname)
@@ -284,11 +284,11 @@ def Log(logname='encutils', level='INFO', stream=sys.stderr, filename=None,
 
     return log
 
-"""
+def guess_content_by_mediatype(media_type):
+    """
     Attempt to convert a mime/media type into one of the content categories
     we support.
-"""
-def guess_content_by_mediatype(media_type):
+    """
     if not media_type:
         return ContentTypes.Unknown;
 
@@ -319,12 +319,12 @@ def guess_content_by_mediatype(media_type):
 
     return xmltype
 
-"""
+def guess_content(text):
+    """
     Checks if a given text is XML (**naive test!**), and returns the result
     as a ContentTypes value. Primarily used if content type could be determined
     a different way.
-"""
-def guess_content(text):
+    """
     try:
         if text[:30].find(u'<?xml version=') != -1:
             return ContentTypes.XMLApplication
@@ -332,13 +332,13 @@ def guess_content(text):
         pass
     return ContentTypes.Unknown
 
-"""
+def find_in_http_response(response, log=None):
+    """
     Returns ``(media_type, encoding)`` information from the response'
     Content-Type HTTP header. (Case of headers is ignored.)
     May be ``(None, None)`` e.g. if no Content-Type header is
     available.
-"""
-def find_in_http_response(response, log=None):
+    """
     info = response.info()
     media_type = info.gettype()
     encoding = info.getparam('charset')
@@ -351,7 +351,8 @@ def find_in_http_response(response, log=None):
 
     return media_type, encoding
 
-"""
+def find_in_xml(fp, log=None, fallback_to_default=True):
+    """
     Attempts to detect the character encoding of the xml file
     given by a file object fp. fp must not be a codec wrapped file
     object! fp may also be a string or unicode string
@@ -372,8 +373,7 @@ def find_in_http_response(response, log=None):
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/363841
     which itself is based on Paul Prescotts recipe:
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52257
-"""
-def find_in_xml(fp, log=None, fallback_to_default=True):
+    """
     if type(fp) in types.StringTypes:
         fp = StringIO.StringIO(fp)
 
@@ -448,15 +448,15 @@ def find_in_xml(fp, log=None, fallback_to_default=True):
         else:
             return None
 
-"""
+def find_in_html(text, log=None):
+    """
     Returns (media_type, encoding) information from (first)
     X/HTML Content-Type ``<meta>`` element if available.
 
     Normally in X/HTML:
         ``<meta http-equiv="Content-Type" content="media_type;
         charset=encoding"/>``
-"""
-def find_in_html(text, log=None):
+    """
     ctmetas = re.findall(ur'''(<meta ("[^"]+"|'[^"]+'|[^'">])*
             http-equiv\s* = \s*['"]\s*Content-Type\s*['"]\s*
             .*?\/?>)
@@ -484,15 +484,15 @@ def find_in_html(text, log=None):
 
     return media_type, encoding
 
-"""
+def default_for_media_type(media_type, log=None):
+    """
     Returns a default encoding for the given media_type.
     For example ``'utf-8'`` for ``media_type='application/xml'``.
 
     Refers to RFC 3023 and HTTP MIME specification.
 
     If no default encoding is available returns ``None``.
-"""
-def default_for_media_type(media_type, log=None):
+    """
     defaultencodings = {
         ContentTypes.XMLApplication: u'utf-8',
         ContentTypes.XMLText: u'ascii',
@@ -513,7 +513,8 @@ def default_for_media_type(media_type, log=None):
                 media_type, encoding)
     return encoding
 
-"""
+def guess(text, log=None):
+    """
     If installed uses chardet http://chardet.feedparser.org/ to detect
     encoding, else tries different encodings on text and returns the one
     that does not raise an exception which is not very advanced or may
@@ -525,8 +526,7 @@ def default_for_media_type(media_type, log=None):
     author as it is only checked if the text might be encoded in that
     encoding. Some texts might be working in "iso-8859-1" *and*
     "windows-1252" *and* "ascii" *and* "utf-8" and ...
-"""
-def guess(text, log=None):
+    """
     try:
         import chardet
         encoding = chardet.detect(text)["encoding"]
