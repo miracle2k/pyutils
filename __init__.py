@@ -41,38 +41,38 @@ def urlarg(url, name, value=None):
     """
     If ``name`` and ``value`` are set, the url will be returned in modified
     form with the ``name`` query string parameter set to ``value``. If
-    ``value?`` is ``False``, an possibly existing ``name`` will be removed
+    ``value`` is ``False``, a possibly existing ``name`` will be removed
     instead.
-    
+
     If ``value` is not passed, the value of the query string parameter
     ``name`` in url is returned, or ``None`` if it doesn't exist.
-    
+
     Querying:
     >>> print urlarg('http://example.org/', 'x')
     None
     >>> urlarg('http://example.org/?x=1', 'x')
     '1'
-    
+
     Adding an argument:
     >>> urlarg('http://example.org/', 'x', 5)
     'http://example.org/?x=5'
-    
+
     Changing an argument:
     >>> urlarg('http://example.org/?x=1', 'x', 5)
     'http://example.org/?x=5'
-    
+
     Deleting  an argument:
     >>> urlarg('http://example.org/?x=1', 'x', False)
     'http://example.org/'
-    
+
     Delete non-existent argument:
     >>> urlarg('http://example.org/', 'x', False)
     'http://example.org/'
-    
+
     Set to empty string does not delete:
     >>> urlarg('http://example.org/?x=3', 'x', '')
     'http://example.org/?x='
-    
+
     If a trailing slash is missing, none is added:
     >>> urlarg('http://example.org/', 'x', 5)
     'http://example.org/?x=5'
@@ -165,7 +165,7 @@ def setup_django(settings_path=None):
     a Django environment. ``settings_path`` needs to point to the directory
     where you're project's ``settings.py`` is located, either as an absolute
     path, or as relative path in reference to the module calling this function.
-    
+
     If ``settings_path`` is not specified or ``False``, a fake settings module
     will be setup. Note that while you'll then be able to work with certain
     Django modules that require this, you're environment is still somewhat
@@ -217,7 +217,7 @@ def print_r(obj, level=1, indent=' '*4):
         out("%s"%repr(obj))  # use repr() so we can output tuples
     # need a final linebreak at the very end for the root element
     if level==1: out("\n")
-    
+
 # self-test
 if __name__ == '__main__':
     import doctest
