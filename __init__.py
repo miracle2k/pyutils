@@ -76,6 +76,9 @@ def urlarg(url, name, value=None):
     If a trailing slash is missing, none is added:
     >>> urlarg('http://example.org/', 'x', 5)
     'http://example.org/?x=5'
+
+    # TODO: do we support unicode (probably not)? See set_url_param template
+    # tag in djutils.
     """
     import cgi, urlparse, urllib
     # parse the url and the query string part
