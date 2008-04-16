@@ -7,30 +7,57 @@ class EnumMetaclass(type):
     This implementation requires (or allows) the user to assign a value to each
     enum identifer manually. Example:
 
-        class Color(Enum):
-            red = 1
-            green = 2
-            blue = 3
+    >>> class Color(ValueEnum):
+    ...     red = 1
+    ...     green = 2
+    ...     blue = 3
 
     Those enumerations cannot be instantiated; however they can be subclassed:
 
-        class ExtendedColor(Color):
-            white = 0
-            orange = 4
-            yellow = 5
-            purple = 6
-            black = 7
+    >>> class ExtendedColor(Color):
+    ...     white = 0
+    ...     orange = 4
+    ...     yellow = 5
+    ...     purple = 6
+    ...     black = 7
 
     Examples:
 
-        print Color.red                         # 1
-        print Color.red == Color.red            # True
-        print Color.red == Color.blue           # False
-        print Color.red == 1                    # True
-        print Color.red == 2                    # False
-        print Color.red == ExtendedColor.red    # True
-        print int(Color.red)                    # 1
-        for x in Color: print int(x)            # 1, 2, 3
+    >>> print Color.red
+    1
+    >>> print Color.red == Color.red
+    True
+    >>> print Color.red == Color.blue
+    False
+    >>> print Color.red == 1
+    True
+    >>> print Color.red == 2
+    False
+    >>> print Color.red == ExtendedColor.red
+    True
+    >>> print int(Color.red)
+    1
+    >>> l = [int(x) for x in Color]
+    >>> l.sort()
+    >>> l
+    [1, 2, 3]
+    >>> Color.red.belongs(Color)
+    True
+    >>> Color.has(Color.red)
+    True
+    >>> Color.red.name()
+    'Color.red'
+    >>> Color.red.name(True)
+    'red'
+    >>> print Color.by_name('red')
+    1
+    >>> print Color.by_name('Color.red')
+    1
+    >>> print Color.by_name('grey')
+    None
+    >>> print Color.by_name('grey', Color.red)
+    1
+
 
     Based on code from:
         http://svn.python.org/projects/python/trunk/Demo/newmetaclasses/Enum.py
@@ -65,6 +92,15 @@ class EnumMetaclass(type):
     def __iter__(cls):
         for item in cls.__members__:
             yield getattr(cls, item)
+
+    def has(self, other):
+        return other in self.__dict__.values()
+
+    def by_name(self, name, default=None):
+        for option in self:
+            if name in [option.name(False), option.name(True)]:
+                return option
+        return default
 
     def __repr__(cls):
         s1 = s2 = ""
@@ -115,18 +151,26 @@ class EnumInstance(int):
         ``name()``.
         """
         return str(self.value())
-    def name(self):
-        return "%s.%s" % (self.__classname, self.__enumname)
+
+    def name(self, short=False):
+        if short:
+            return "%s" % (self.__enumname)
+        else:
+            return "%s.%s" % (self.__classname, self.__enumname)
+
     def value(self):
         return int(self)
-    
+
+    def belongs(self, other):
+        return self in other.__dict__.values()
+
 class ValueEnum:
     """
     The actual enum class that you should descend from.
     """
     __metaclass__ = FullEnumMetaclass
-    
-    
+
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -194,3 +238,8 @@ def HashEnum(*names):
     constants = tuple(constants)
     EnumType = EnumClass()
     return EnumType
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
