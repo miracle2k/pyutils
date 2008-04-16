@@ -1,11 +1,31 @@
 import re
 
 __all__ = (
+    'hextable',
     'strtr',
     'ex2u',
     'safmtb',
     'safmt',
 )
+
+_hextable_filter =\
+    ''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
+def hextable(src, length=8):
+    """
+    Return the incoming byte stream in a table hex format known from hex
+    viewers/editors. ``length``determines the number of bytes per line.
+
+    From:
+        http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/142812
+    """
+    N=0; result=''
+    while src:
+       s,src = src[:length],src[length:]
+       hexa = ' '.join(["%02X"%ord(x) for x in s])
+       s = s.translate(FILTER)
+       result += "%04X   %-*s   %s\n" % (N, length*3, hexa, s)
+       N+=length
+    return result
 
 def strtr(dict, text):
     """
