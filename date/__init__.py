@@ -7,7 +7,7 @@ library from:
 Pass them to the dateutil.parser.parse() function to modify the parsing 
 behaviour.
 
-Note: Versions older then 1.3 are broken when it comes to hanling 
+Note: Versions older then 1.3 are broken when it comes to handling 
 custom parser infos.
 """
 
