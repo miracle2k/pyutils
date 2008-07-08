@@ -46,7 +46,7 @@ def ex2u(exception):
         http://bugs.python.org/issue2517
 
     This can make exception handling very tedious, if you cannot know what to
-    except: An exception object may contain a bytestring message, a unicode
+    expect: An exception object may contain a bytestring message, a unicode
     message, or possibly no message at all (when passed multiple arguments).
     Special exception classes may also choose to implement custom __str__ or
     __unicode__ methods.
