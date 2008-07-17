@@ -32,6 +32,9 @@ def decode(text):
     return charrefpat.sub(entitydecode, text)
 
 
+re_strip_tags = re.compile(
+    r"<\/?(\w+)((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>")
+
 def smart_strip_tags(text):
     """Return the given HTML with all tags stripped.
 
@@ -45,9 +48,31 @@ def smart_strip_tags(text):
 
     # TODO: could this be more solid by using HTMLParser (see comment
     by Josiah Carlson: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/440481)?
+
+    Simple:
+    >>> smart_strip_tags('abc<a>def<a />ghi<a></a>jkl')
+    u'abcdefghijkl'
+
+    Certain tags are replaced by whitespace:
+    >>> smart_strip_tags('abc<div name="x">def<br/>ghi<p />jkl')
+    u'abc def ghi jkl'
+
+    Attributes can contain '>' characters:
+    >>> smart_strip_tags('abc<img alt=">">def')
+    u'abcdef'
+
+    Tags can wrap across multiple lines (but attribute values can't
+    for now, btw):
+    >>> smart_strip_tags('abc<img \\nalt=">"\\n>def')
+    u'abcdef'
     """
-    result = re.sub(r'</?(div|br|p)[^>]*?>', ' ', force_unicode(text))
-    return re.sub(r"<\/?\w+((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>", '', result)
+
+    def repl(m):
+        if m.groups() and m.groups()[0] in ('br', 'div', 'p'):
+            return ' '
+        else:
+            return ''
+    return re_strip_tags.sub(repl, force_unicode(text))
 
 
 def sanitize_whitespace(text):
@@ -64,3 +89,8 @@ sanitize_whitespace.pattern = re.compile(r"""(?xu)
     # multiple spaces within a line - capture the replacement space in 2
     ([\ \t])[\ \t]+
 """)
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
