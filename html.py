@@ -38,9 +38,16 @@ def smart_strip_tags(text):
     This is a version of the same function in ``django.utils.html``,
     but attempts to insert spaces in place of certain tags like
     br, div, p etc.
+
+    It also uses an improved regular expression (it can handle '>'
+    inside attributes) from:
+    http://kev.coolcavemen.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/
+
+    # TODO: could this be more solid by using HTMLParser (see comment
+    by Josiah Carlson: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/440481)?
     """
     result = re.sub(r'</?(div|br|p)[^>]*?>', ' ', force_unicode(text))
-    return re.sub(r'<[^>]*?>', '', result)
+    return re.sub(r"<\/?\w+((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>", '', result)
 
 
 def sanitize_whitespace(text):
