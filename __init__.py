@@ -1,8 +1,11 @@
-import os, sys
+﻿import os, sys
+import cgi
+import urlparse
+import urllib
 
 __all__ = (
     'urljoin',
-    'urlarg'
+    'urlarg', 'urlargs',
     'get_caller',
     'append_sys_path',
     'equal_floats',
@@ -11,13 +14,16 @@ __all__ = (
     'print_r',
 )
 
+
 def urljoin(*args):
-    """
-    Join any arbitrary strings into a forward-slash delimited list.
-    Do not strip leading / from first element, nor trailing / from last element.
+    """Join any arbitrary strings into a forward-slash delimited list.
+
+    Do not strip leading / from first element, nor trailing / from
+    last element.
 
     From: http://coderseye.com/2006/the-best-python-url_join-routine-ever.html
     """
+
     if len(args) == 0:
         return ""
 
@@ -37,75 +43,170 @@ def urljoin(*args):
 
     return joined.replace("\\", "/")
 
-def urlarg(url, name, value=None):
-    """
-    If ``name`` and ``value`` are set, the url will be returned in modified
-    form with the ``name`` query string parameter set to ``value``. If
-    ``value`` is ``False``, a possibly existing ``name`` will be removed
-    instead.
+
+def urlargs(url, changes):
+    """Modify or retrieve url querystring arguments.
+
+    ``url`` can either be a string (the url from which the querystring
+    arguments are retrieved from), or a dict of querystring arguments
+    in the form ``name`` => ``value``. In the latter case, instead of
+    the modified url, only the querystring part will be returned.
+
+    Modification:
+    -------------
+
+    ``changes`` is a dict with ``name`` => ``value`` mapping (argument
+    name and argument value).
+
+    If both a ``name`` and ``value`` are set for an element, the url
+    will be modified to have the query string parameter given by
+    ``name`` set to ``value``.
+
+    If ``value`` is ``False`` or ``None``, a possibly existing ``name``
+    argument will be removed instead.
 
     If ``value` is not passed, the value of the query string parameter
     ``name`` in url is returned, or ``None`` if it doesn't exist.
 
+    Retrieval:
+    ----------
+
+    Alternatively, instead of a dict ``changes`` may be a string or
+    tuple of strings. The function will then return the appropriate
+    value as read form the querystring, or tuple of values.
+
+
     Querying:
-    >>> print urlarg('http://example.org/', 'x')
+    >>> print urlargs('http://example.org/', 'x')
     None
-    >>> urlarg('http://example.org/?x=1', 'x')
+    >>> urlargs('http://example.org/?x=1', 'x')
     '1'
+    >>> urlargs('http://example.org/?x=1', ('x','y',))
+    ('1', None)
 
     Adding an argument:
-    >>> urlarg('http://example.org/', 'x', 5)
+    >>> urlargs('http://example.org/', {'x': 5})
     'http://example.org/?x=5'
 
     Changing an argument:
-    >>> urlarg('http://example.org/?x=1', 'x', 5)
+    >>> urlargs('http://example.org/?x=1', {'x': 5})
     'http://example.org/?x=5'
 
     Deleting  an argument:
-    >>> urlarg('http://example.org/?x=1', 'x', False)
+    >>> urlargs('http://example.org/?x=1', {'x': False})
+    'http://example.org/'
+    >>> urlargs('http://example.org/?x=1', {'x': None})
     'http://example.org/'
 
     Delete non-existent argument:
-    >>> urlarg('http://example.org/', 'x', False)
+    >>> urlargs('http://example.org/', {'x': None})
     'http://example.org/'
 
     Set to empty string does not delete:
-    >>> urlarg('http://example.org/?x=3', 'x', '')
+    >>> urlargs('http://example.org/?x=3', {'x': ''})
     'http://example.org/?x='
 
+    We can do multiple changes at once:
+    >>> urlargs('http://example.org/?x=3&y=abc', {'x': None, 'y': 'cde', 'z': 1})
+    'http://example.org/?y=cde&z=1'
+
     If a trailing slash is missing, none is added:
-    >>> urlarg('http://example.org/', 'x', 5)
+    >>> urlargs('http://example.org/', {'x': 5})
     'http://example.org/?x=5'
 
-    # TODO: do we support unicode (probably not)? See set_url_param template
-    # tag in djutils.
+    Check various functionality when unicode is involved:
+    >>> urlargs(u'http://example.org/?x=ä', {'x': 'ü'})
+    u'http://example.org/?x=%C3%BC'
+    >>> urlargs(u'http://example.org/?x=ä', 'x')
+    u'\\xc3\\xa4'
+    >>> urlargs(u'http://example.org/?', {'ä': 'ü'})
+    u'http://example.org/?%C3%A4=%C3%BC'
+
+    Our function takes extra care to accept unicode for both name
+    and key by converting it to utf8. How much sense that actually
+    makes, if webservers even accept the result or when - but be
+    that as it may for now (in fact, some practical tests seem to
+    indicate that most webservers won't handle utf8 encoding here
+    correctly; see also Wikipedia "Percent-encoding"
+    (oldid=225230345), which points to the 2005 rf3986 that suggests
+    utf8 for *new* uri schemes).
+    >>> urlargs(u'http://example.org/?', {u'ä': u'ü'})
+    u'http://example.org/?%C3%83%C2%A4=%C3%83%C2%BC'
+
+    Apparently, when a querystring part (here the final "?") is
+    missing, the tuple returned by urlparse() contains bytestrings
+    only, even if the input was unicode. This is then also reflected
+    in a non-unicode return value of our function. Not really a
+    per-design behaviour or even desirable, but we'd like to know if
+    it changes at some point.
+    >>> urlargs(u'http://example.org/', {})
+    'http://example.org/'
     """
-    import cgi, urlparse, urllib
+
     # parse the url and the query string part
-    url = [x for x in urlparse.urlparse(url)]
+    url = list(urlparse.urlparse(url))
     params = cgi.parse_qs(url[4], keep_blank_values=True)
-    # 'get' the param
-    if value is None:
-        result = params.get(name, None)
-        return result and result[0] or None
-    #'set' the param
+
+    # query arguments
+    if isinstance(changes, basestring):
+        return params.get(changes, [None])[0]
+    elif isinstance(changes, tuple):
+        return tuple([params.get(name, [None])[0] for name in changes])
+
+    # modify arguments
     else:
-        if value is not False: params.update({name: value})   # set
-        elif name in params: del params[name]    # delete
+        for name, value in changes.items():
+            # urlencode() chokes on unicode input (exception if it
+            # can't convert a key to ascii, and "encode-replaces"
+            # values. So we convert to utf8 upfront.
+            if isinstance(name, unicode):
+                name = name.encode('utf8')
+            if isinstance(value, unicode):
+                value = value.encode('utf8')
+
+            if not value in (False, None,):
+                params.update({name: value})
+            elif name in params:
+                del params[name]
         # re-encode the url and return
         url[4] = urllib.urlencode(params, doseq=True)
         return urlparse.urlunparse(url)
 
-def get_caller(up=1):
+def urlarg(url, name, value=None):
+    """Simplified version of ``urlargs``, in case only a single
+    argument needs changing.
+
+    Also kept for backwards compatibility (``urlargs`` in it's current
+    form was previously not available).
+
+
+    It's easy to confuse urlarg() and urlargs() like that, so try
+    to prevent it:
+    >>> urlarg('http://example.org?x=1', {'x': 2})
+    Traceback (most recent call last):
+    ValueError: name argument must be a string
     """
-    Get file name, line number, function name and source text of the caller's
-    caller as 4-tuple: (file, line, func, text).
 
-    The optional argument 'up' allows retrieval of a caller further back up
-    into the call stack.
+    # see test - make it harder to confuse urlarg and urlargs
+    if not isinstance(name, basestring):
+        raise ValueError('name argument must be a string')
 
-    Note, the source text may be None and function name may be '?' in the
-    returned result.  In Python 2.3+ the file name may be an absolute path.
+    if value:
+        return urlargs(url, {name: value})
+    else:
+        return urlargs(url, name)
+
+
+def get_caller(up=1):
+    """Get file name, line number, function name and source text of
+    the caller's caller as 4-tuple: (file, line, func, text).
+
+    The optional argument 'up' allows retrieval of a caller further
+    back up into the call stack.
+
+    Note, the source text may be None and function name may be '?'
+    in the returned result.  In Python 2.3+ the file name may be an
+    absolute path.
 
     From: http://mail.python.org/pipermail/python-list/2005-February/308489.html
     """
@@ -121,35 +222,41 @@ def get_caller(up=1):
     # running with psyco?
     return ('', 0, '', None)
 
-def append_sys_path(*path, **kwargs):
-    """
-    Append a path to the system path. Can take multiple arguments, in the
-    same way os.path.join() does. Relative paths are considered to be relative
-    to the calling module's filename (this can be changed by the "levels"
-    parameter - the default is "1" - each level is one level on the stack, to
-    find the module that will be used as a base for relative filenames).
 
-    This is primarily useful if you want to include a module who's location
-    in the filesystem you are aware of, say, two levels up.
+def append_sys_path(*path, **kwargs):
+    """Append a path to the system path.
+
+    Can take multiple arguments, in the same way os.path.join() does.
+
+    Relative paths are considered to be relative to the calling module's
+    filename (this can be changed by the "levels" parameter - the default
+    is "1" - each level is one level on the stack, to find the module
+    that will be used as a base for relative filenames).
+
+    This is primarily useful if you want to include a module who's
+    location in the filesystem you are aware of, say, two levels up.
     """
     levels = kwargs.get('levels', 1)
     dir = os.path.abspath(os.path.join(os.path.dirname(get_caller(up=levels)[0]), *path))
     if not dir in sys.path:
         sys.path.append(dir)
 
+
 def equal_floats(f1, f2, digits=11):
-    """
-    Compares two float values, and returns a boolean indicating whether they
-    are the same with respect to a certain treshold/resolution/precision.
+    """Compares two float values, and returns a boolean indicating
+    whether they are the same with respect to a certain
+    treshold/resolution/precision.
 
     The digits parameter takes an integer indicating the number of
-    digits/decimal places/resolution you wish to use for the comparison. The
-    default is 11, which seems to be the max mysql precision on my installation,
-    when I was required to write this function.
+    digits/decimal places/resolution you wish to use for the
+    comparison. The default is 11, which seems to be the max mysql
+    precision on my installation, when I was required to write this
+    function.
 
-    Note that this function might return True of something like f1=1e-12 and
-    f2=1e-112, i.e. it does not take into account the relative difference, so
-    it may or may not be for you. A different solution would possible do:
+    Note that this function might return True of something like
+    f1=1e-12 and f2=1e-112, i.e. it does not take into account the
+    relative difference, so it may or may not be for you. A different
+    solution would possible do:
         abs(f1 - f2) < abs(f1) * 1e-6
     See this forum thread for some discussion on the topic:
         http://www.velocityreviews.com/forums/t351983-precision-for-equality-of-two-floats.html
@@ -162,22 +269,24 @@ def equal_floats(f1, f2, digits=11):
     threshold = 10**-digits
     return not (math.fabs(f1 - f2) > threshold)
 
-def setup_django(settings_path=None):
-    """
-    Very useful for setting up standalone scripts that wish to make use of
-    a Django environment. ``settings_path`` needs to point to the directory
-    where you're project's ``settings.py`` is located, either as an absolute
-    path, or as relative path in reference to the module calling this function.
 
-    If ``settings_path`` is not specified or ``False``, a fake settings module
-    will be setup. Note that while you'll then be able to work with certain
-    Django modules that require this, you're environment is still somewhat
-    limited - for example, we cannot put a project on the path in those cases,
-    obviously.
+def setup_django(settings_path=None):
+    """Very useful for setting up standalone scripts that wish to make
+    use of a Django environment.
+
+    ``settings_path`` needs to point to the directory where you're
+    project's ``settings.py`` is located, either as an absolute path,
+    or as relative path in reference to the module calling this function.
+
+    If ``settings_path`` is not specified or ``False``, a fake settings
+    module will be setup. Note that while you'll then be able to work
+    with certain Django modules that require this, you're environment is
+    still somewhat limited - for example, we cannot put a project on the
+    path in those cases, obviously.
 
     Note that this would probably better fit into ``djutils``. However,
-    currently, that package *requires* a working django setup, so for now, we
-    put it here.
+    currently, that package *requires* a working django setup, so for
+    now, we put it here.
     """
     if settings_path:
         from django.core.management import setup_environ
@@ -192,10 +301,10 @@ def setup_django(settings_path=None):
         sys.modules[settings_name] = types.ModuleType(settings_name)
         os.environ['DJANGO_SETTINGS_MODULE'] = settings_name
 
+
 def strdump(str, filename):
-    """
-    Simply output a string to a file, overriding any existing content.
-    Useful for debugging.
+    """Simply output a string to a file, overriding any existing
+    content. Useful for debugging.
     """
     file = open(filename, 'w+')
     try:
@@ -203,10 +312,11 @@ def strdump(str, filename):
     finally:
         file.close()
 
+
 def print_r(obj, level=1, indent=' '*4):
-    """
-    Similar to PHP's print_r, although in it's current version it is simply
-    useful for outputting dicts with a bit of formatting, indentation etc.
+    """Similar to PHP's print_r, although in it's current version it
+    is simply useful for outputting dicts with a bit of formatting,
+    indentation etc.
     """
     def out(what): sys.stdout.write("%s"%what)
     if isinstance(obj, dict):
@@ -221,7 +331,7 @@ def print_r(obj, level=1, indent=' '*4):
     # need a final linebreak at the very end for the root element
     if level==1: out("\n")
 
-# self-test
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
