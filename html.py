@@ -12,6 +12,9 @@ def decode(text):
 
     From:
         http://zesty.ca/python/scrape.py
+
+    A similar attempt can be found here:
+        http://groups.google.com/group/comp.lang.python/msg/ce3fc3330cbbac0a
     """
     from htmlentitydefs import name2codepoint
     if type(text) is unicode:
