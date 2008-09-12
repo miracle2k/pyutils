@@ -23,6 +23,9 @@ def urljoin(*args):
 
     From: http://coderseye.com/2006/the-best-python-url_join-routine-ever.html
 
+    TODO: It's worth noting that this function doesn't resolve ..\, and
+    thus, sucks. ``urlparse.urljoin`` seems to be nicer in pretty much
+    every respect.
 
     With Unicode:
     >>> urljoin(u'Viva_Pi\\xf1ata_DS.html')
