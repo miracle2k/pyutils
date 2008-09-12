@@ -35,7 +35,7 @@ class GermanParserInfo(parser.parserinfo):
                 ("Jun", "Juni"),
                 ("Jul", "Juli"),
                 ("Aug", "August"),
-                ("Sep", "September"),
+                ("Sep", "Sept", "September"),
                 ("Okt", "Oktober"),
                 ("Nov", "November"),
                 ("Dez", "Dezember")]
