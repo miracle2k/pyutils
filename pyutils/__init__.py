@@ -22,16 +22,21 @@ def urljoin(*args):
     last element.
 
     From: http://coderseye.com/2006/the-best-python-url_join-routine-ever.html
+
+
+    With Unicode:
+    >>> urljoin(u'Viva_Pi\\xf1ata_DS.html')
+    u'Viva_Pi\\xf1ata_DS.html'
     """
 
     if len(args) == 0:
         return ""
 
     if len(args) == 1:
-        return str(args[0])
+        return args[0]
 
     else:
-        args = [str(arg).replace("\\", "/") for arg in args]
+        args = [arg.replace("\\", "/") for arg in args]
         work = [args[0]]
         for arg in args[1:]:
             if arg.startswith("/"):
