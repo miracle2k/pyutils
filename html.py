@@ -79,20 +79,55 @@ def smart_strip_tags(text):
 
 
 def sanitize_whitespace(text):
-    """Replaces multiple space characters with a single one.
+    """Remove unnecessary whitespace from ``text``.
 
-    Also removes spaces spaces in front of and at the end of a line.
+    Replaces multiple space characters with a single one, and more than
+    two linebreaks between paragraphs.
+    Also removes spaces in front of and at the end of a line.
+
+    >>> sanitize_whitespace(u'    ')
+    u''
+    >>> sanitize_whitespace(u'in       between')
+    u'in between'
+    >>> sanitize_whitespace(u'    start and end of line     ')
+    u'start and end of line'
+    >>> sanitize_whitespace(u'    start and end    \\n   of multiple lines     ')
+    u'start and end\\nof multiple lines'
+    >>> sanitize_whitespace(u'various\\r\\n\\r\\n\\r\\nmultiple\\n\\n\\n\\nempty\\r\\r\\rlines')
+    u'various\\r\\n\\r\\nmultiple\\n\\nempty\\r\\rlines'
+    >>> sanitize_whitespace(u'    start     and between   and at end    ')
+    u'start and between and at end'
+    >>> sanitize_whitespace(u'a    \\n  \\n  \\n    \\n   b')
+    u'a\\n\\nb'
+    >>> sanitize_whitespace('    non    unicode   \\n\\n\\n\\n  string')
+    u'non unicode\\n\\nstring'
+    >>> sanitize_whitespace(u'\\xa0  with    \\xa0 non-breaking spaces   \\xa0 ')
+    u'with non-breaking spaces'
     """
-    def repl(match): # avoid "unmatched group" error - basically "\1\2"
-        return (match.groups()[0] or '') + (match.groups()[1] or '')
-    return sanitize_whitespace.pattern.sub(repl, force_unicode(text))
-sanitize_whitespace.pattern = re.compile(r"""(?xu)
+    def repl(match):  # to avoid "unmatched group" error - basically "\1\2"
+        return (match.groups()[0] or u'') + (match.groups()[1] or u'')
+
+    # First, prepare the input string by removing non-breaking spaces
+    # (&nbsp) - \xa0 in unicode. Handling this in the regex is much
+    # more complex.
+    result = force_unicode(text)
+    result = result.replace(u'\xa0', u' ')
+
+    result = sanitize_whitespace.pattern1.sub(repl, result)
+    return sanitize_whitespace.pattern2.sub(ur'\1', result)
+
+sanitize_whitespace.pattern1 = re.compile(ur"""(?xu)
     # spaces before and after a line - capture the linebreak in 1
     [\ \t]*(^|\r\n|\r|\n|$)[\ \t]* |
     # multiple spaces within a line - capture the replacement space in 2
     ([\ \t])[\ \t]+
 """)
+sanitize_whitespace.pattern2 = re.compile(ur"""(?xu)
+    # multiple linebreaks - allow max. 2 in sequence
+    ((?:\r\n|\r|\n){2})(?:\r\n|\r|\n)+
+""")
 
+x = sanitize_whitespace(u'    ')
 
 if __name__ == '__main__':
     import doctest
