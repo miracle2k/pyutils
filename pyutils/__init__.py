@@ -193,13 +193,19 @@ def urlarg(url, name, value=None):
     >>> urlarg('http://example.org?x=1', {'x': 2})
     Traceback (most recent call last):
     ValueError: name argument must be a string
+
+    [bug] Removing an argument is not confused with querying one.
+    >>> urlarg('http://example.org?x=1', 'x', False)
+    'http://example.org'
+    >>> urlarg('http://example.org?x=1', 'x', None)
+    '1'
     """
 
     # see test - make it harder to confuse urlarg and urlargs
     if not isinstance(name, basestring):
         raise ValueError('name argument must be a string')
 
-    if value:
+    if value is not None:
         return urlargs(url, {name: value})
     else:
         return urlargs(url, name)
