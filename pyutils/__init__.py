@@ -3,6 +3,7 @@ import cgi
 import urlparse
 import urllib
 
+
 __all__ = (
     'urljoin',
     'urlarg', 'urlargs',
@@ -12,6 +13,7 @@ __all__ = (
     'setup_django',
     'strdump',
     'print_r',
+    'raise_unsupported_args',
 )
 
 
@@ -344,6 +346,33 @@ def print_r(obj, level=1, indent=' '*4):
         out("%s"%repr(obj))  # use repr() so we can output tuples
     # need a final linebreak at the very end for the root element
     if level==1: out("\n")
+
+
+def raise_unsupported_args(kw):
+    """Raises a ``TypeError`` if there are values in ``kw``, with a nice
+    message listing all the keys.
+
+    Use this if you have a function that takes a fixed number of allowed
+    arguments through the ``**kwargs`` syntax, which is often useful if
+    you also have ``*args``, but do not want to specify your keyword
+    arguments first.
+
+    Usage:
+        def delete(*files, **kwargs)::
+            recursive = kwargs.pop('recursive', True)
+            raise_unsupported_args(kwargs)
+
+    >>> raise_unsupported_args({})
+    >>> raise_unsupported_args({'a': 1})
+    Traceback (most recent call last):
+    TypeError: function got unexpected keyword arguments: 'a'
+    >>> raise_unsupported_args({'a': 1, 'b': True})
+    Traceback (most recent call last):
+    TypeError: function got unexpected keyword arguments: 'a', 'b'
+    """
+    if kw:
+        raise TypeError("function got unexpected keyword arguments: '%s'" %
+            "', '".join(kw.keys()))
 
 
 if __name__ == '__main__':
