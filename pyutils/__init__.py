@@ -54,7 +54,7 @@ def urljoin(*args):
     return joined.replace("\\", "/")
 
 
-def urlargs(url, changes):
+def urlargs(url, *queries, **changes):
     """Modify or retrieve url querystring arguments.
 
     ``url`` can either be a string (the url from which the querystring
@@ -65,83 +65,83 @@ def urlargs(url, changes):
     Modification:
     -------------
 
-    ``changes`` is a dict with ``name`` => ``value`` mapping (argument
-    name and argument value).
+    Provide the changes you would like to make as keyword arguments -
+    the url will be modified to have the query string values set
+    appropriately to match the key-value pairs given.
 
-    If both a ``name`` and ``value`` are set for an element, the url
-    will be modified to have the query string parameter given by
-    ``name`` set to ``value``.
-
-    If ``value`` is ``False`` or ``None``, a possibly existing ``name``
-    argument will be removed instead.
-
-    If ``value` is not passed, the value of the query string parameter
-    ``name`` in url is returned, or ``None`` if it doesn't exist.
+    If the value of such a keyword argument is ``False`` or ``None``, a
+    possibly existing query string parameter with that the argument's
+    name will be removed instead.
 
     Retrieval:
     ----------
 
-    Alternatively, instead of a dict ``changes`` may be a string or
-    tuple of strings. The function will then return the appropriate
-    value as read form the querystring, or tuple of values.
+    Alternatively, instead of keyword aguments, you may pass any
+    number of strings as positional arguments. The function will then
+    return the appropriate values as read form the querystring.
 
 
     Querying:
     >>> print urlargs('http://example.org/', 'x')
-    None
+    (None,)
     >>> urlargs('http://example.org/?x=1', 'x')
-    '1'
-    >>> urlargs('http://example.org/?x=1', ('x','y',))
+    ('1',)
+    >>> urlargs('http://example.org/?x=1', 'x', 'y')
     ('1', None)
 
     Adding an argument:
-    >>> urlargs('http://example.org/', {'x': 5})
+    >>> urlargs('http://example.org/', x=5)
     'http://example.org/?x=5'
 
     Changing an argument:
-    >>> urlargs('http://example.org/?x=1', {'x': 5})
+    >>> urlargs('http://example.org/?x=1', x=5)
     'http://example.org/?x=5'
 
     Deleting  an argument:
-    >>> urlargs('http://example.org/?x=1', {'x': False})
+    >>> urlargs('http://example.org/?x=1', x=False)
     'http://example.org/'
-    >>> urlargs('http://example.org/?x=1', {'x': None})
+    >>> urlargs('http://example.org/?x=1', x=None)
     'http://example.org/'
 
     Delete non-existent argument:
-    >>> urlargs('http://example.org/', {'x': None})
+    >>> urlargs('http://example.org/', x=None)
     'http://example.org/'
 
     Set to empty string does not delete:
-    >>> urlargs('http://example.org/?x=3', {'x': ''})
+    >>> urlargs('http://example.org/?x=3', x='')
     'http://example.org/?x='
 
     We can do multiple changes at once:
-    >>> urlargs('http://example.org/?x=3&y=abc', {'x': None, 'y': 'cde', 'z': 1})
+    >>> urlargs('http://example.org/?x=3&y=abc', x=None, y='cde', z=1)
     'http://example.org/?y=cde&z=1'
 
     If a trailing slash is missing, none is added:
-    >>> urlargs('http://example.org/', {'x': 5})
+    >>> urlargs('http://example.org/', x=5)
     'http://example.org/?x=5'
 
     Check various functionality when unicode is involved:
-    >>> urlargs(u'http://example.org/?x=ä', {'x': 'ü'})
+    >>> urlargs(u'http://example.org/?x=ä', x='ü')
     u'http://example.org/?x=%C3%BC'
     >>> urlargs(u'http://example.org/?x=ä', 'x')
-    u'\\xc3\\xa4'
-    >>> urlargs(u'http://example.org/?', {'ä': 'ü'})
+    (u'\\xc3\\xa4',)
+    >>> urlargs(u'http://example.org/?', **{'ä': 'ü'})
     u'http://example.org/?%C3%A4=%C3%BC'
 
     Our function takes extra care to accept unicode for both name
-    and key by converting it to utf8. How much sense that actually
+    and value by converting it to utf8. How much sense that actually
     makes, if webservers even accept the result or when - but be
     that as it may for now (in fact, some practical tests seem to
     indicate that most webservers won't handle utf8 encoding here
     correctly; see also Wikipedia "Percent-encoding"
     (oldid=225230345), which points to the 2005 rf3986 that suggests
     utf8 for *new* uri schemes).
-    >>> urlargs(u'http://example.org/?', {u'ä': u'ü'})
-    u'http://example.org/?%C3%83%C2%A4=%C3%83%C2%BC'
+    >>> urlargs(u'http://example.org/?', **{'a': u'ü'})
+    u'http://example.org/?a=%C3%83%C2%BC'
+
+    # This part is no longer supported with the new syntax, since
+    # keyword args may not be unicode.
+    #>>> urlargs(u'http://example.org/?', changes={u'ä': u'ü'})
+    #u'http://example.org/?%C3%83%C2%A4=%C3%83%C2%BC'
 
     Apparently, when a querystring part (here the final "?") is
     missing, the tuple returned by urlparse() contains bytestrings
@@ -149,19 +149,26 @@ def urlargs(url, changes):
     in a non-unicode return value of our function. Not really a
     per-design behaviour or even desirable, but we'd like to know if
     it changes at some point.
-    >>> urlargs(u'http://example.org/', {})
+    >>> urlargs(u'http://example.org/', **{})
     'http://example.org/'
+
+    Mixing modify and query mode is an error
+    >>> urlargs('http://example.org/', 'x', y=1)
+    Traceback (most recent call last):
+    ...
+    TypeError: cannot mix query and modify mode
     """
+
+    if queries and changes:
+        raise TypeError('cannot mix query and modify mode')
 
     # parse the url and the query string part
     url = list(urlparse.urlparse(url))
     params = cgi.parse_qs(url[4], keep_blank_values=True)
 
     # query arguments
-    if isinstance(changes, basestring):
-        return params.get(changes, [None])[0]
-    elif isinstance(changes, tuple):
-        return tuple([params.get(name, [None])[0] for name in changes])
+    if queries:
+        return tuple([params.get(name, [None])[0] for name in queries])
 
     # modify arguments
     else:
@@ -183,12 +190,22 @@ def urlargs(url, changes):
         return urlparse.urlunparse(url)
 
 def urlarg(url, name, value=None):
-    """Simplified version of ``urlargs``, in case only a single
-    argument needs changing.
+    """Simplified version of ``urlargs`` that can only change or query a
+    single argument.
 
-    Also kept for backwards compatibility (``urlargs`` in it's current
-    form was previously not available).
+    It is kept mostly for backwards compatibility (``urlargs`` in it's
+    current form was previously not available), but also differs from
+    ``urlargs`` that a queried value is returned directly, rather than
+    as a 1-tuple.
 
+
+    Set a value
+    >>> urlarg('http://example.org?x=1', 'x', 2)
+    'http://example.org?x=2'
+
+    Query a value
+    >>> urlarg('http://example.org?x=1', 'x')
+    '1'
 
     It's easy to confuse urlarg() and urlargs() like that, so try
     to prevent it:
@@ -208,9 +225,9 @@ def urlarg(url, name, value=None):
         raise ValueError('name argument must be a string')
 
     if value is not None:
-        return urlargs(url, {name: value})
+        return urlargs(url, **{name: value})
     else:
-        return urlargs(url, name)
+        return urlargs(url, name)[0]
 
 
 def get_caller(up=1):
