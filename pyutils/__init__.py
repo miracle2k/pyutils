@@ -115,6 +115,16 @@ def urlargs(url, *queries, **changes):
     >>> urlargs('http://example.org/?x=3&y=abc', x=None, y='cde', z=1)
     'http://example.org/?y=cde&z=1'
 
+    Instead of a url, a dictionary of query parameters may be passed
+    >>> urlargs({}, x=1)
+    '?x=1'
+    >>> urlargs({'x': '1'}, x=2)
+    '?x=2'
+    >>> urlargs({'x': '1'}, 'x')
+    ('1',)
+    >>> urlargs({'x': '1'}, x=False)
+    ''
+
     If a trailing slash is missing, none is added:
     >>> urlargs('http://example.org/', x=5)
     'http://example.org/?x=5'
@@ -157,18 +167,29 @@ def urlargs(url, *queries, **changes):
     Traceback (most recent call last):
     ...
     TypeError: cannot mix query and modify mode
+
+    If a dictionary is used, the original is not modified
+    >>> a = {}
+    >>> urlargs(a, x=1)
+    '?x=1'
+    >>> a
+    {}
     """
 
     if queries and changes:
         raise TypeError('cannot mix query and modify mode')
 
-    # parse the url and the query string part
-    url = list(urlparse.urlparse(url))
-    params = cgi.parse_qs(url[4], keep_blank_values=True)
+    # we need the query params as a dict, if necessary parse the url
+    if isinstance(url, dict):
+        params = url.copy()   # we'll need to modify this locally, so copy
+        url = ['', '', '', '', '', '']
+    else:
+        url = list(urlparse.urlparse(url))
+        params = dict(cgi.parse_qsl(url[4], keep_blank_values=True))
 
     # query arguments
     if queries:
-        return tuple([params.get(name, [None])[0] for name in queries])
+        return tuple([params.get(name, None) for name in queries])
 
     # modify arguments
     else:
