@@ -14,6 +14,7 @@ __all__ = (
     'strdump',
     'print_r',
     'raise_unsupported_args',
+    'profileit',
 )
 
 
@@ -411,6 +412,29 @@ def raise_unsupported_args(kw):
     if kw:
         raise TypeError("function got unexpected keyword arguments: '%s'" %
             "', '".join(kw.keys()))
+
+
+def profileit(printlines=1):
+    """Profile the decorated callable.
+
+    From:
+        http://www.biais.org/blog/index.php/2007/01/20/18-python-profiling-decorator
+    """
+    import hotshot, hotshot.stats
+    def _my(func):
+        def _func(*args, **kargs):
+            prof = hotshot.Profile("profiling.data")
+            res = prof.runcall(func, *args, **kargs)
+            prof.close()
+            stats = hotshot.stats.load("profiling.data")
+            stats.strip_dirs()
+            stats.sort_stats('time', 'calls')
+            print ">>>---- Begin profiling print"
+            stats.print_stats(printlines)
+            print ">>>---- End profiling print"
+            return res
+        return _func
+    return _my
 
 
 if __name__ == '__main__':
