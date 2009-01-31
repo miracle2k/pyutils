@@ -160,18 +160,21 @@ def _get_logger():
     return _logger
 
 def _supports_headers(func):
-    def newfunc(str, *args, **kwargs):
+    def newfunc(*args, **kwargs):
         depends = kwargs.pop('depends', None)
         header = kwargs.pop('header', None)
-        # if this message depends on another, print that first
+        # if this message depends on another, print that first, by
+        # repeating the old call with the new log function
         if depends and depends in _message_headers:
-            _print(_message_headers[depends])
+            old_args = _message_headers[depends]
+            func(*old_args[0], **old_args[1])
             del _message_headers[depends]  # only print once
         # print current message
-        if not func(str, *args, **kwargs):
-            # if not printed and is header, then remember for later
+        if not func(*args, **kwargs):
+            # if not printed and is header, then remember
+            # this call for later
             if header:
-                _message_headers[header] = str
+                _message_headers[header] = args, kwargs
     return newfunc
 
 def _print(s, level):
