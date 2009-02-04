@@ -100,13 +100,13 @@ def crop(image, new_width, new_height):
     image_ratio = image_width / float(image_height)
     if thumb_ratio < image_ratio:  # width needs to shrink
         top = 0
-        bottom = image_width
+        bottom = image_height
         thumb_width = int(org_width * crop_ratio)
         left = (image_width - thumb_width) // 2
         right = left + thumb_width
     else:                          # height needs to shrink
         left = 0
-        right = image_width_width
+        right = image_width
         thumb_height = int(image_width * thumb_ratio)
         top = (new_height - thumb_height) // 2
         bottom = top + thumb_height
