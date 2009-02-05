@@ -115,18 +115,96 @@ def crop(image, new_width, new_height):
 
 
 @_common
-def extend(image, new_width, new_height):
+def extend(image, new_width, new_height, threshold=None):
     """Resize the source image while keeping propertions to fit either
     the requested width or height, and then extend the canvas to fit
     the requested thumbnail size.
 
-    # TODO: Does currently not support enlarging of images.
-    """
-    thumb_img = image.copy()
-    thumb_img.thumbnail((new_width, new_height), Image.ANTIALIAS)
-    thumb_width, thumb_height = thumb_img.size
+    If ``threshold`` is given, and the difference in proportion between
+    the source image and the requested thumbnail is smaller than this
+    value, then no attempt will be made to keep propertions. This
+    basically is a mechanism to trade ugly white borders against minor
+    contortions.
 
-    # extend canvas with whitespace
-    result = Image.new("RGB", (new_width, new_height), "white")
-    result.paste(thumb_img, ((new_width-thumb_width)//2, (new_height-thumb_height)//2))
-    return result
+    Part of this code was adapted from ``Image.py:Image.thumbnail()``,
+    but now supports enlarging of images, too.
+    """
+
+    # enable use of default value
+    if threshold == True:
+        threshold = 0.1
+
+    # unless below the threshold, adjust the target size so that it
+    # matches the proportions of the source image.
+    target_size = (new_width, new_height)
+    if not threshold or \
+       not abs(target_size[0] / float(target_size[1]) -
+               image.size[0] / float(image.size[1])) < threshold:
+        target_size = _ensure_proportions(image.size, (new_width, new_height))
+
+    # try to load a fitting version of the image, then resize
+    image.draft(None, target_size)
+    image.load()
+    try:
+        thumb_img = image.resize(target_size, Image.ANTIALIAS)
+    except ValueError:
+        thumb_img = image.resize(target_size, Image.NEAREST)  # fallback
+
+    # if we already have the right size (the unmodified one that was
+    # originally requested), we can simply return it.
+    if thumb_img.size == (new_width, new_height):
+        return thumb_img
+    else:
+        # otherwise, we make it the right size by adding a border
+        thumb_width, thumb_height = thumb_img.size
+        result = Image.new("RGB", (new_width, new_height), "white")
+        result.paste(thumb_img,
+            ((new_width-thumb_width)//2, (new_height-thumb_height)//2))
+        return result
+
+
+def _ensure_proportions(current_size, requested_size):
+    """Given the current size and the requested new size, will modify
+    the latter so that the proportions of the former are maintained.
+
+    Makes sure that the returned size is always smaller (on either axis),
+    never larger then what was originally requested.
+
+    This is similar to code that the ``Image.py:Image.thumbnail()``
+    function uses (in fact, has been adapted from there), except it also
+    supports enlarging images.
+
+    >>> current = (100, 100)
+    >>> _ensure_proportions(current, (700, 900))
+    (700, 700)
+    >>> _ensure_proportions(current, (700, 500))
+    (500, 500)
+    >>> _ensure_proportions(current, (70, 90))
+    (70, 70)
+    >>> _ensure_proportions(current, (70, 50))
+    (50, 50)
+    >>> _ensure_proportions(current, (200, 10))
+    (10, 10)
+    >>> _ensure_proportions(current, (10, 200))
+    (10, 10)
+    >>> _ensure_proportions(current, (50, 50))
+    (50, 50)
+    >>> _ensure_proportions(current, (100, 100))
+    (100, 100)
+    """
+    cx, cy = current_size
+    rx, ry = requested_size
+    cr = cx / float(cy)        # current ratio
+    rr = rx / float(ry)        # requested ratio
+    if cr > rr:
+        ry = max(cy * rx / cx, 1)
+        cx = rx
+    if cr < rr:
+        rx = max(cx * ry / cy, 1)
+        cy = ry
+    return rx, ry
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
