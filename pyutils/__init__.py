@@ -15,6 +15,7 @@ __all__ = (
     'print_r',
     'raise_unsupported_args',
     'profileit',
+    'trailing_sep', 'trailing_slash',
 )
 
 
@@ -435,6 +436,29 @@ def profileit(printlines=1):
             return res
         return _func
     return _my
+
+
+def trailing_sep(path, add=True, sep=os.path.sep):
+    """Add a trailing path separator to the given path, if not yet 
+    existing.
+    
+    Setting ``add`` to ``False`` will reverse the effect and remove an 
+    existing backslash.
+    """
+    if add:
+        if path[-1:] != sep:
+            path = path + sep
+    else:
+        if path[-1:] == sep:
+            path = path[:-1]
+    return path
+    
+    
+def trailing_slash(path, add=True):
+    """Version of ``trailing_sep`` that always adds a slash.
+    Useful for example when using URLs.
+    """
+    return trailing_sep(path, add, '/')
 
 
 if __name__ == '__main__':
