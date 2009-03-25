@@ -2,3 +2,8 @@ syntax: glob
 
 *.pyc
 *.~*
+
+syntax: regexp
+
+^\.project
+^\.pydevproject
