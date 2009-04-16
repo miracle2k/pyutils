@@ -36,7 +36,7 @@ def decode(text):
 
 
 re_strip_tags = re.compile(
-    r"<\s*\/?\s*(\w[^ />]*)?((?:['\"].*?['\"]|[^'\">\s]+)|\s*)+\/?>")
+    r"(?:<!--.*?-->|<\s*\/?\s*(\w[^ />]*)?((?:['\"].*?['\"]|[^'\">\s]+)|\s*)+\/?>)")
 
 def smart_strip_tags(text):
     """Return the given HTML with all tags stripped.
@@ -89,8 +89,8 @@ def smart_strip_tags(text):
     u'abcdef'
 
     Comments are stripped as well.
-    >>> smart_strip_tags('abc<!-- hello world -->def')
-    u'abcdef'
+    >>> smart_strip_tags('abc<!-- hello world -->def<!-- <a> -->ghi')
+    u'abcdefghi'
 
     It works even if a tag or it's attributes are not strictly valid.
     >>> smart_strip_tags('abc<a withoutvalue=>def')
