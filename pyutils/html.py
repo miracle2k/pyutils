@@ -132,7 +132,6 @@ sanitize_whitespace.pattern2 = re.compile(ur"""(?xu)
     ((?:\r\n|\r|\n){2})(?:\r\n|\r|\n)+
 """)
 
-x = sanitize_whitespace(u'    ')
 
 if __name__ == '__main__':
     import doctest
