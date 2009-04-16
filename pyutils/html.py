@@ -36,7 +36,7 @@ def decode(text):
 
 
 re_strip_tags = re.compile(
-    r"<\/?(\w+)((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>")
+    r"<\/?([^ >]+?)((\s+[^=>]+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>")
 
 def smart_strip_tags(text):
     """Return the given HTML with all tags stripped.
@@ -46,7 +46,7 @@ def smart_strip_tags(text):
     br, div, p etc.
 
     It also uses an improved regular expression (it can handle '>'
-    inside attributes) from:
+    inside attributes), based on:
     http://kev.coolcavemen.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/
 
     # TODO: could this be more solid by using HTMLParser (see comment
@@ -67,6 +67,11 @@ def smart_strip_tags(text):
     Tags can wrap across multiple lines (but attribute values can't
     for now, btw):
     >>> smart_strip_tags('abc<img \\nalt=">"\\n>def')
+    u'abcdef'
+
+    Both tag and attribute values may contain non-alphabetic characters,
+    like a colon (used as a namespace prefix, in XML or MSWord exports).
+    >>> smart_strip_tags('abc<m:lMargin m:val="0" />def')
     u'abcdef'
     """
 
