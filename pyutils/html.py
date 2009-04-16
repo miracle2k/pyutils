@@ -36,7 +36,7 @@ def decode(text):
 
 
 re_strip_tags = re.compile(
-    r"<\/?([^ >]+?)((\s+[^=>]+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>")
+    r"<\s*\/?\s*(\w[^ />]*)?((?:['\"].*?['\"]|[^'\">\s]+)|\s*)+\/?>")
 
 def smart_strip_tags(text):
     """Return the given HTML with all tags stripped.
@@ -46,8 +46,7 @@ def smart_strip_tags(text):
     br, div, p etc.
 
     It also uses an improved regular expression (it can handle '>'
-    inside attributes), based on:
-    http://kev.coolcavemen.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/
+    inside attributes).
 
     # TODO: could this be more solid by using HTMLParser (see comment
     by Josiah Carlson: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/440481)?
@@ -57,11 +56,26 @@ def smart_strip_tags(text):
     u'abcdefghijkl'
 
     Certain tags are replaced by whitespace:
-    >>> smart_strip_tags('abc<div name="x">def<br/>ghi<p />jkl')
+    >>> smart_strip_tags('abc<div name="x">def<br />ghi<p />jkl')
     u'abc def ghi jkl'
+
+    Bug: Tag name is read correcly even in certain border cases,
+    like when the closing slash follows the tag name right away:
+    >>> smart_strip_tags('a<br/ >b< br/>c</ br/>d< /br>e')
+    u'a b c d e'
 
     Attributes can contain '>' characters:
     >>> smart_strip_tags('abc<img alt=">">def')
+    u'abcdef'
+    >>> smart_strip_tags('abc<img ">">def')
+    u'abcdef'
+
+    Attributes can be standalone:
+    >>> smart_strip_tags('abc<input checked foo bar>def')
+    u'abcdef'
+
+    Attributes can be unquoted:
+    >>> smart_strip_tags('abc<a b=c>def')
     u'abcdef'
 
     Tags can wrap across multiple lines (but attribute values can't
@@ -77,6 +91,28 @@ def smart_strip_tags(text):
     Comments are stripped as well.
     >>> smart_strip_tags('abc<!-- hello world -->def')
     u'abcdef'
+
+    It works even if a tag or it's attributes are not strictly valid.
+    >>> smart_strip_tags('abc<a withoutvalue=>def')
+    u'abcdef'
+    >>> smart_strip_tags('abc<a "withoutname">def')
+    u'abcdef'
+    >>> smart_strip_tags('abc<a =>def')
+    u'abcdef'
+    >>> smart_strip_tags('abc<a b=\\'c">def')
+    u'abcdef'
+    >>> smart_strip_tags('abc<  a>def<  /a>ghi</  a>jkl< / a>mno')
+    u'abcdefghijklmno'
+    >>> smart_strip_tags('abc<"foo">def<"">ghi<>jkl')
+    u'abcdefghijkl'
+
+    # This function is incredible slow when run on a simple string like
+    '''abc<a withincompletequotes="xy>ef">'''. The longer the attribute is,
+    the slonger the regex becomes (using Python 2.5). We should investigate
+    this and potentially rewrite the regex.
+
+    # TODO: Can we somehow assert that in a case like '''<"df">''',
+    the "df" is not returned as the tag name?
     """
 
     def repl(m):
