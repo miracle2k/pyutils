@@ -36,7 +36,8 @@ def decode(text):
 
 
 re_strip_tags = re.compile(
-    r"(?:<!--.*?-->|<\s*\/?\s*(\w[^ />]*)?((?:['\"].*?['\"]|[^'\">\s]+)|\s*)+\/?>)")
+    r"(?:<!--.*?-->|<\s*\/?\s*(\w[^ />]*)?((?:['\"].*?['\"]|[^'\">\s]+)|\s*)+\/?>)",
+    re.DOTALL)
 
 def smart_strip_tags(text):
     """Return the given HTML with all tags stripped.
@@ -78,9 +79,12 @@ def smart_strip_tags(text):
     >>> smart_strip_tags('abc<a b=c>def')
     u'abcdef'
 
-    Tags can wrap across multiple lines (but attribute values can't
-    for now, btw):
+    Tag contents, including attribute values, may span multiple lines:
     >>> smart_strip_tags('abc<img \\nalt=">"\\n>def')
+    u'abcdef'
+    >>> smart_strip_tags('abc<img alt="1\\n2">def')
+    u'abcdef'
+    >>> smart_strip_tags('abc<img alt=1\\n2>def')
     u'abcdef'
 
     Both tag and attribute values may contain non-alphabetic characters,
@@ -88,8 +92,9 @@ def smart_strip_tags(text):
     >>> smart_strip_tags('abc<m:lMargin m:val="0" />def')
     u'abcdef'
 
-    Comments are stripped as well.
-    >>> smart_strip_tags('abc<!-- hello world -->def<!-- <a> -->ghi')
+    Comments are stripped as well, even if they contain tags, and even
+    if they span multiple lines.
+    >>> smart_strip_tags('abc<!-- hello \\n world -->def<!-- <a> \\n -->ghi')
     u'abcdefghi'
 
     It works even if a tag or it's attributes are not strictly valid.
