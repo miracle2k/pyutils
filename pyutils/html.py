@@ -73,6 +73,10 @@ def smart_strip_tags(text):
     like a colon (used as a namespace prefix, in XML or MSWord exports).
     >>> smart_strip_tags('abc<m:lMargin m:val="0" />def')
     u'abcdef'
+
+    Comments are stripped as well.
+    >>> smart_strip_tags('abc<!-- hello world -->def')
+    u'abcdef'
     """
 
     def repl(m):
