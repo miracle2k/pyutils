@@ -36,7 +36,7 @@ def decode(text):
 
 
 re_strip_tags = re.compile(
-    r"(?:<!--.*?-->|<\s*\/?\s*(\w[^ />]*)?((?:['\"].*?['\"]|[^'\">\s]+)|\s*)+\/?>)",
+    r"(?:<!--.*?-->|<\s*\/?\s*(\w[^ />]*)?(?:['\"].*?['\"]|[^'\">])*\/?>)",
     re.DOTALL)
 
 def smart_strip_tags(text):
@@ -110,11 +110,6 @@ def smart_strip_tags(text):
     u'abcdefghijklmno'
     >>> smart_strip_tags('abc<"foo">def<"">ghi<>jkl')
     u'abcdefghijkl'
-
-    # This function is incredible slow when run on a simple string like
-    '''abc<a withincompletequotes="xy>ef">'''. The longer the attribute is,
-    the slonger the regex becomes (using Python 2.5). We should investigate
-    this and potentially rewrite the regex.
 
     # TODO: Can we somehow assert that in a case like '''<"df">''',
     the "df" is not returned as the tag name?
