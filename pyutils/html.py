@@ -36,8 +36,24 @@ def decode(text):
 
 
 re_strip_tags = re.compile(
-    r"(?:<!--.*?-->|<\s*\/?\s*(\w[^ />]*)?(?:['\"].*?['\"]|[^'\">])*\/?>)",
-    re.DOTALL)
+    r"""(?:
+            # Handle comments separately, to allow nested tags
+            <!--.*?-->
+         |
+            # A tag
+            <\s*\/?\s*
+                # The tag name, captured so we can act upon it
+                (\w[^ />]*)?
+                # Basically arbitrary text until tag end (we don't
+                # care about  attributes), but we want to allow
+                # '>' inside attributes.
+                (?:
+                    ['\"].*?['\"]
+                 |
+                    [^'\">]
+                )*
+            \/?>
+        )""", re.DOTALL | re.VERBOSE)
 
 def smart_strip_tags(text):
     """Return the given HTML with all tags stripped.
