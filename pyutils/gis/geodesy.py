@@ -26,7 +26,8 @@ from math import radians, degrees, sin, cos, asin, sqrt, atan2
 
 
 __all__ = ('EARTH_RADIUS',
-           'distance_haversine', 'bearing', 'bearing_degrees', 'cross_track',)
+           'distance_haversine', 'distance_cosine', 'bearing',
+           'bearing_degrees', 'cross_track',)
 
 
 EARTH_RADIUS = R = 6371;   # kilometers
@@ -50,6 +51,16 @@ def distance_haversine(lat1, lon1, lat2, lon2):
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     d = R * c
     return d
+
+
+def distance_cosine(lat1, lon1, lat2, lon2):
+    """Use Law of Cosines to calculate distance (in km) between two
+    points specified by latitude/longitude (in numeric degrees).
+    """
+    lat1 = radians(lat1)
+    lat2 = radians(lat2)
+    dlon = radians(lon2 - lon1)
+    return acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(dlon)) * R
 
 
 def bearing(lat1, lon1, lat2, lon2):
