@@ -22,7 +22,7 @@ I hope I won't need them again:
 """
 
 
-import math
+from math import radians, degrees, sin, cos, asin, sqrt, atan2
 
 
 __all__ = ('EARTH_RADIUS',
@@ -40,14 +40,14 @@ def distance_haversine(lat1, lon1, lat2, lon2):
          Sky and Telescope, vol 68, no 2, 1984
          http://www.census.gov/cgi-bin/geo/gisfaq?Q5.1
     """
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    lat1 = math.radians(lat1)
-    lat2 = math.radians(lat2)
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    lat1 = radians(lat1)
+    lat2 = radians(lat2)
 
-    a = math.sin(dlat / 2) * math.sin(dlat / 2) + math.cos(lat1) * \
-        math.cos(lat2) * math.sin(dlon / 2) * math.sin(dlon / 2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    a = sin(dlat / 2) * sin(dlat / 2) + cos(lat1) * \
+        cos(lat2) * sin(dlon / 2) * sin(dlon / 2)
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
     d = R * c
     return d
 
@@ -59,21 +59,20 @@ def bearing(lat1, lon1, lat2, lon2):
 
     Will return a value in radians, different from the original.
     """
-    lat1 = math.radians(lat1)
-    lat2 = math.radians(lat2)
-    dlon = math.radians(lon2 - lon1)
+    lat1 = radians(lat1)
+    lat2 = radians(lat2)
+    dlon = radians(lon2 - lon1)
 
-    y = math.sin(dlon) * math.cos(lat2)
-    x = math.cos(lat1) * math.sin(lat2) -    \
-        math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
-    return math.atan2(y, x)
+    y = sin(dlon) * cos(lat2)
+    x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon)
+    return atan2(y, x)
 
 
 def bearing_degrees(lat1, lon1, lat2, lon2):
     """See ``bearing()```.
     """
     radians = bearing(lat1, lon1, lat2, lon2)
-    return (math.degrees(x) + 360) % 360  # unsigned
+    return (degrees(x) + 360) % 360  # unsigned
 
 
 def cross_track(latA, lonA, latB, lonB, latP, lonP):
@@ -81,26 +80,17 @@ def cross_track(latA, lonA, latB, lonB, latP, lonP):
     in kilometers.
 
     Sometimes called cross track error.
+
+    >>> "%.8f" % cross_track(48.76165, 11.41947, 48.75857, 11.42501, 48.76176, 11.41595)
+    '0.15697753'
     """
     d13 = distance_haversine(latA, lonA, latP, lonP)
     brng12 = bearing(latA, lonA, latB, lonB)
     brng13 = bearing(latA, lonA, latP, lonP)
-    dXt = math.asin(math.sin(d13 / R) * math.sin(brng13 - brng12)) * R
+    dXt = asin(sin(d13 / R) * sin(brng13 - brng12)) * R
     return dXt
 
 
-
-
-print cross_track(
-   -94.127592, 41.81762,
-   -94.087257, 41.848202,
-   -94.046875, 41.791057
-   )
-
-
-
-print cross_track(
-  48.76165, 11.41947,
-  48.75857, 11.42501,
-   48.76176, 11.41595
-   )
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
