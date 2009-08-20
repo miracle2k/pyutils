@@ -22,15 +22,15 @@ I hope I won't need them again:
 """
 
 
-from math import radians, degrees, sin, cos, asin, sqrt, atan2
+from math import radians, degrees, sin, cos, asin, sqrt, atan2, pi
 
 
 __all__ = ('EARTH_RADIUS',
            'distance_haversine', 'distance_cosine', 'bearing',
-           'bearing_degrees', 'cross_track',)
+           'bearing_degrees', 'destination', 'cross_track',)
 
 
-EARTH_RADIUS = R = 6371;   # kilometers
+EARTH_RADIUS = R = 6371.0;   # kilometers  (make sure this is a float)
 
 
 def distance_haversine(lat1, lon1, lat2, lon2):
@@ -84,6 +84,27 @@ def bearing_degrees(lat1, lon1, lat2, lon2):
     """
     radians = bearing(lat1, lon1, lat2, lon2)
     return (degrees(x) + 360) % 360  # unsigned
+
+
+def destination(lat, long, bearing, d):
+    """Calculate destination point given start point, with initial bearing
+    in degrees and distance in kilometers:
+
+        http://williams.best.vwh.net/avform.htm#LL
+
+    Returns a 2-tuple (lat, long), in degrees.
+    """
+    lat1 = radians(lat)
+    lon1 = radians(long)
+    bearing = radians(bearing)
+
+    lat2 = asin(sin(lat1) * cos(d/R) + cos(lat1) * sin(d/R) * cos(bearing))
+    lon2 = lon1 + atan2(sin(bearing) * sin(d/R) * cos(lat1),
+                        cos(d/R) - sin(lat1) * sin(lat2))
+    lon2 = (lon2 + pi) % (2 * pi) - pi   # normalize to -180...+180
+
+    # if lat2 == NaN || lon2 == NaN: return None  # Hm.
+    return degrees(lat2), degrees(lon2)
 
 
 def cross_track(latA, lonA, latB, lonB, latP, lonP):
