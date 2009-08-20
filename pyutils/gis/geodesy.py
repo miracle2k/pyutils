@@ -83,7 +83,7 @@ def bearing_degrees(lat1, lon1, lat2, lon2):
     """See ``bearing()```.
     """
     radians = bearing(lat1, lon1, lat2, lon2)
-    return (degrees(x) + 360) % 360  # unsigned
+    return (degrees(radians) + 360) % 360  # unsigned
 
 
 def destination(lat, long, bearing, d):
