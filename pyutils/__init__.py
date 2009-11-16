@@ -1,4 +1,5 @@
 ﻿import os, sys
+import signal as signal_
 import cgi
 import urlparse
 import urllib
@@ -15,6 +16,7 @@ __all__ = (
     'raise_unsupported_args',
     'profileit',
     'trailing_sep', 'trailing_slash',
+    'expose_shell',
 )
 
 
@@ -426,6 +428,35 @@ def trailing_slash(path, add=True):
     Useful for example when using URLs.
     """
     return trailing_sep(path, add, '/')
+    
+    
+def expose_shell(signal=None):
+    """Installs a signal handler that exposes a shell when the signal is 
+    installed.
+    
+    `´signal`` defaults to SIGUSR1.
+    
+    From:
+        http://stackoverflow.com/questions/132058/getting-stack-trace-from-a-running-python-application/133384#133384
+        
+    TODO: There is some nice functionality here that could be integrated:
+        http://bazaar.launchpad.net/~bzr/bzr/trunk/annotate/head:/bzrlib/breakin.py
+    """
+    def debug(sig, frame):
+        """Interrupt running process, and provide a python prompt for
+        interactive debugging."""
+        d={'_frame':frame}         # Allow access to frame object.
+        d.update(frame.f_globals)  # Unless shadowed by global
+        d.update(frame.f_locals)
+    
+        i = code.InteractiveConsole(d)
+        message  = "Signal recieved : entering python shell.\nTraceback:\n"
+        message += ''.join(traceback.format_stack(frame))
+        i.interact(message)
+    if not signal:
+        # On Windows, you need to pass your own signal.
+        signal = signal_.SIGUSR1
+    return signal_.signal(signal, debug) 
 
 
 if __name__ == '__main__':
