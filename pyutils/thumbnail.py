@@ -93,25 +93,35 @@ def fit(image, new_width, new_height):
 @_common
 def crop(image, new_width, new_height):
     """Resize the source image to fit the requested thumbnail size,
-    but crop when necessary to keep propertions the same.
+    but crop when necessary to keep proportions the same.
+
+    This can both scale down and enlarge images, due in case of the
+    latter, cropping is probably not the right algorithm to do in the
+    first place: You are first throwing away information, when you
+    don't have enough of it in the first place.
     """
+
+    # 1) Modify the bounding box of the original image to match the
+    # requested thumb proportions.
     image_width, image_height = image.size
-    thumb_ratio = new_width / float(new_height)
-    image_ratio = image_width / float(image_height)
-    if thumb_ratio < image_ratio:  # width needs to shrink
-        top = 0
-        bottom = image_height
-        thumb_width = int(org_width * crop_ratio)
-        left = (image_width - thumb_width) // 2
-        right = left + thumb_width
-    else:                          # height needs to shrink
-        left = 0
-        right = image_width
-        thumb_height = int(image_width * thumb_ratio)
-        top = (new_height - thumb_height) // 2
-        bottom = top + thumb_height
-    return image.crop((left, top, right, bottom)).\
-        resize((new_width, new_height), Image.ANTIALIAS)
+    target_width, target_height = \
+        _ensure_proportions((new_width, new_height), (image_width, image_height),)
+
+    # 2) Use the adjusted image size to crop the original, so that we
+    # have a piece of the original that we can resize to the requested
+    # thumbnail size without skewing the image.
+    # Note: We calculate both the horizontal and vertical axis, but only
+    # one of them will be cropped, due to ``_ensure_proportions`` only
+    # changing either the width or the height.
+    top = (image_height - target_height) // 2
+    left = (image_width - target_width) // 2
+    bottom = image_height - top
+    right = image_width - left
+    image = image.crop((left, top, right, bottom,))
+
+    # 3) Resize to target size; we can be sure we are not skewing due
+    # to the cropping we've done.
+    return image.resize((new_width, new_height), Image.ANTIALIAS)
 
 
 @_common
