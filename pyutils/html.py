@@ -1,6 +1,10 @@
 import re
 from django.utils.encoding import force_unicode
 
+
+__all__ = ('decode', 'smart_strip_tags', 'sanitize_whitespace',)
+
+
 # matches a character entity reference (decimal numeric,
 # hexadecimal numeric, or named).
 charrefpat = re.compile(r'&(#(\d+|x[\da-fA-F]+)|[\w.:-]+);?')
