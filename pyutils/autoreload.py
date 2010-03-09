@@ -1,6 +1,7 @@
 # Autoreloading launcher.
 # Borrowed from Peter Hunt and the CherryPy project (http://www.cherrypy.org).
 # Some taken from Ian Bicking's Paste (http://pythonpaste.org/).
+# Adjustments made by Michael Elsdoerfer (michael@elsdoerfer.com).
 #
 # Portions copyright (c) 2004, CherryPy Team (team@cherrypy.org)
 # All rights reserved.
@@ -67,10 +68,17 @@ def code_changed():
             return True
     return False
 
-def reloader_thread():
+def reloader_thread(softexit=False):
+    """If ``soft_exit`` is True, we use sys.exit(); otherwise ``os_exit``
+    will be used to end the process.
+    """
     while RUN_RELOADER:
         if code_changed():
-            sys.exit(3) # force reload
+            # force reload
+            if softexit:
+                sys.exit(3)
+            else:
+                os._exit(3)
         time.sleep(1)
 
 def restart_with_reloader():
@@ -84,11 +92,26 @@ def restart_with_reloader():
         if exit_code != 3:
             return exit_code
 
-def python_reloader(main_func, args, kwargs):
+def python_reloader(main_func, args, kwargs, check_in_thread=True):
+    """
+    If ``check_in_thread`` is False, ``main_func`` will be run in a separate
+    thread, and the code checker in the main thread. This was the original
+    behavior of this module: I (Michael Elsdoerfer) changed the default
+    to be the reverse: Code checker in thread, main func in main thread.
+    This was necessary to make the thing work with Twisted
+    (http://twistedmatrix.com/trac/ticket/4072).
+    """
     if os.environ.get("RUN_MAIN") == "true":
-        thread.start_new_thread(main_func, args, kwargs)
+        if check_in_thread:
+            thread.start_new_thread(reloader_thread, (), {'softexit': False})
+        else:
+            thread.start_new_thread(main_func, args, kwargs)
+
         try:
-            reloader_thread()
+            if not check_in_thread:
+                reloader_thread(softexit=True)
+            else:
+                main_func(*args, **kwargs)
         except KeyboardInterrupt:
             pass
     else:
@@ -106,7 +129,7 @@ def jython_reloader(main_func, args, kwargs):
         time.sleep(1)
 
 
-def main(main_func, args=None, kwargs=None):
+def main(main_func, args=None, kwargs=None, **more_options):
     if args is None:
         args = ()
     if kwargs is None:
@@ -115,4 +138,4 @@ def main(main_func, args=None, kwargs=None):
         reloader = jython_reloader
     else:
         reloader = python_reloader
-    reloader(main_func, args, kwargs)
+    reloader(main_func, args, kwargs, **more_options)
