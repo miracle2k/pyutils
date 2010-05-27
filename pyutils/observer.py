@@ -24,7 +24,14 @@ Usage:
 __all__ = ('event',)
 
 
-class event(object):
+def event(func=None):
+    if func:
+        return event_decorator(func)
+    else:
+        return boundevent()
+
+
+class event_decorator(object):
     def __init__(self, func):
         self.__doc__ = func.__doc__
         self._key = ' ' + func.__name__
