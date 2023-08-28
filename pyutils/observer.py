@@ -66,7 +66,7 @@ class event_decorator(object):
     def __get__(self, obj, cls):
         try:
             return obj.__dict__[self._key]
-        except KeyError, exc:
+        except KeyError as exc:
             be = obj.__dict__[self._key] = boundevent(
                 obj if self.with_sender else None)
             return be

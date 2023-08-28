@@ -1,8 +1,9 @@
 ﻿import os, sys
 import signal as signal_
 import cgi
-import urlparse
-import urllib
+import urllib.parse
+import urllib.request, urllib.parse, urllib.error
+from functools import reduce
 
 
 __all__ = (
@@ -187,7 +188,7 @@ def urlargs(url, *queries, **changes):
         params = url.copy()   # we'll need to modify this locally, so copy
         url = ['', '', '', '', '', '']
     else:
-        url = list(urlparse.urlparse(url))
+        url = list(urllib.parse.urlparse(url))
         params = dict(cgi.parse_qsl(url[4], keep_blank_values=True))
 
     # query arguments
@@ -196,13 +197,13 @@ def urlargs(url, *queries, **changes):
 
     # modify arguments
     else:
-        for name, value in changes.items():
+        for name, value in list(changes.items()):
             # urlencode() chokes on unicode input (exception if it
             # can't convert a key to ascii, and "encode-replaces"
             # values. So we convert to utf8 upfront.
-            if isinstance(name, unicode):
+            if isinstance(name, str):
                 name = name.encode('utf8')
-            if isinstance(value, unicode):
+            if isinstance(value, str):
                 value = value.encode('utf8')
 
             if not value in (False, None,):
@@ -210,8 +211,8 @@ def urlargs(url, *queries, **changes):
             elif name in params:
                 del params[name]
         # re-encode the url and return
-        url[4] = urllib.urlencode(params, doseq=True)
-        return urlparse.urlunparse(url)
+        url[4] = urllib.parse.urlencode(params, doseq=True)
+        return urllib.parse.urlunparse(url)
 
 def urlarg(url, name, value=None):
     """Simplified version of ``urlargs`` that can only change or query a
@@ -245,7 +246,7 @@ def urlarg(url, name, value=None):
     """
 
     # see test - make it harder to confuse urlarg and urlargs
-    if not isinstance(name, basestring):
+    if not isinstance(name, str):
         raise ValueError('name argument must be a string')
 
     if value is not None:
@@ -346,7 +347,7 @@ def print_r(obj, level=1, indent=' '*4):
     def out(what): sys.stdout.write("%s"%what)
     if isinstance(obj, dict):
         out("{\n")
-        for key, value in obj.items():
+        for key, value in list(obj.items()):
             out(level*indent+"'%s': "%key)
             print_r(value, level+1, indent)
             out(",\n")
@@ -381,7 +382,7 @@ def raise_unsupported_args(kw):
     """
     if kw:
         raise TypeError("function got unexpected keyword arguments: '%s'" %
-            "', '".join(kw.keys()))
+            "', '".join(list(kw.keys())))
 
 
 def profileit(printlines=1):
@@ -399,9 +400,9 @@ def profileit(printlines=1):
             stats = hotshot.stats.load("profiling.data")
             stats.strip_dirs()
             stats.sort_stats('time', 'calls')
-            print ">>>---- Begin profiling print"
+            print(">>>---- Begin profiling print")
             stats.print_stats(printlines)
-            print ">>>---- End profiling print"
+            print(">>>---- End profiling print")
             return res
         return _func
     return _my

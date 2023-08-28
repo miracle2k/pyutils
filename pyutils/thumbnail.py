@@ -56,7 +56,7 @@ def _common(f):
         # allow us to move this code further below so that we only
         # open the image file once the timestamp comparison determined
         # that we actually have to.
-        if isinstance(image, basestring):
+        if isinstance(image, str):
             source_filename = image
             image = Image.open(image)
         else:

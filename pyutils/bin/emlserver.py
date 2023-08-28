@@ -12,7 +12,7 @@ class EmlServer(SMTPServer):
         f = open(filename, 'w')
         f.write(data)
         f.close
-        print '%s saved.' % filename
+        print('%s saved.' % filename)
         self.no += 1
 
 

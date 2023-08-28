@@ -36,7 +36,7 @@ def strtr(dict, text):
         http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/81330
     """
     # Create a regular expression  from the dictionary keys
-    regex = re.compile(u"(%s)" % "|".join(map(re.escape, dict.keys())))
+    regex = re.compile("(%s)" % "|".join(map(re.escape, list(dict.keys()))))
     # For each match, look-up corresponding value in dictionary
     return regex.sub(lambda mo: dict[mo.string[mo.start():mo.end()]], text)
 
@@ -73,10 +73,10 @@ def ex2u(exception):
     u'\\xe4'
     """
     try:
-        return unicode(exception)
-    except UnicodeEncodeError, e:
+        return str(exception)
+    except UnicodeEncodeError as e:
         if hasattr(exception, 'message'):
-            return unicode(exception.message)
+            return str(exception.message)
         # we had our shot
         raise e
 
@@ -114,7 +114,7 @@ def safmtb(template, args=(), kw=None, savepc=0, verb=0):
       verb    : verbose execution, prints debug output to stdout
     """
     if verb:
-        print "safmt(%r)" % (template,)
+        print("safmt(%r)" % (template,))
 
     if kw is None:
         kw = {}
@@ -133,7 +133,7 @@ def safmtb(template, args=(), kw=None, savepc=0, verb=0):
             break
 
         i = mo.end(0)
-        if verb: print mo.start(), mo.group(0, 1),
+        if verb: print(mo.start(), mo.group(0, 1), end=' ')
 
         stanza, name = mo.group(0, 1)
         if name is not None:
@@ -141,7 +141,7 @@ def safmtb(template, args=(), kw=None, savepc=0, verb=0):
             # and stanza is always non-empty here so slice will never fail
             if stanza[-1] == "%":
                 if savepc:
-                    if verb: print 'saving stanza'
+                    if verb: print('saving stanza')
                     continue
                 # Workaround weird behaviour in python2.1-2.5: a named
                 # argument that is just a percent escape still raises
@@ -153,28 +153,28 @@ def safmtb(template, args=(), kw=None, savepc=0, verb=0):
                 try:
                     dat = stanza % kw
                 except KeyError:
-                    if verb: print 'ignore missing key'
+                    if verb: print('ignore missing key')
                     continue
-            if verb: print "fmt %r" % dat
+            if verb: print("fmt %r" % dat)
         else:
             # %<blah>% does not use up arguments, but "%*.*%" does
             numargs = stanza[-1] != "%"
-            if verb: print "args=%s" % numargs,
+            if verb: print("args=%s" % numargs, end=' ')
             # Allow for "*" parameterisation (uses up to 2)
             numargs += mo.group(0).count("*")
-            if verb: print "args=%s" % numargs,
+            if verb: print("args=%s" % numargs, end=' ')
 
             p = args[di: di + numargs]
             di += numargs
-            if verb: print "p=%s" % (p,),
+            if verb: print("p=%s" % (p,), end=' ')
             if len(p) != numargs:
-                if verb: print "not enough pos args"
+                if verb: print("not enough pos args")
                 continue
             if savepc and stanza[-1] == "%":
-                if verb: print 'saving stanza'
+                if verb: print('saving stanza')
                 continue
             dat = stanza % p
-            if verb: print "fmt %r" % dat
+            if verb: print("fmt %r" % dat)
 
         ret.append(template[last:mo.start()])
         ret.append(dat)

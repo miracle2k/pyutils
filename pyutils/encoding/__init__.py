@@ -28,7 +28,7 @@ TODO:
 
 import cgi
 import re
-import StringIO
+import io
 import sys
 import types
 
@@ -86,7 +86,7 @@ class EncodingInfo(object):
 
     def __str__(self):
         if self.encoding: return self.encoding
-        else: return u''
+        else: return ''
 
     name = property(__str__)
 
@@ -95,7 +95,7 @@ class EncodingInfo(object):
                 self.__class__.__module__, self.__class__.__name__,
                 self.encoding, self.mismatch, id(self))
 
-def detect(content=u'', response=None, log=None):
+def detect(content='', response=None, log=None):
     """
     Finds all encoding related information in given ``text``.
     Uses information in headers of supplied HTTPResponse, possible XML
@@ -234,26 +234,26 @@ def detect(content=u'', response=None, log=None):
     # from different sources contradict each other, and log a warning if so.
     if log:
         if encinfo.http_encoding and encinfo.xml_encoding and\
-           encinfo.http_encoding <> encinfo.xml_encoding:
+           encinfo.http_encoding != encinfo.xml_encoding:
             encinfo.mismatch = True
-            log.warn(u'"%s" (HTTP) <> "%s" (XML) encoding mismatch' %
+            log.warn('"%s" (HTTP) <> "%s" (XML) encoding mismatch' %
                      (encinfo.http_encoding, encinfo.xml_encoding))
         # HTTP + Meta
         if encinfo.http_encoding and encinfo.meta_encoding and\
-             encinfo.http_encoding <> encinfo.meta_encoding:
+             encinfo.http_encoding != encinfo.meta_encoding:
             encinfo.mismatch = True
-            log.warn(u'"%s" (HTTP) <> "%s" (HTML <meta>) encoding mismatch' %
+            log.warn('"%s" (HTTP) <> "%s" (HTML <meta>) encoding mismatch' %
                      (encinfo.http_encoding, encinfo.meta_encoding))
         # XML + Meta
         if encinfo.xml_encoding and encinfo.meta_encoding and\
-             encinfo.xml_encoding <> encinfo.meta_encoding:
+             encinfo.xml_encoding != encinfo.meta_encoding:
             encinfo.mismatch = True
-            log.warn(u'"%s" (XML) <> "%s" (HTML <meta>) encoding mismatch' %
+            log.warn('"%s" (XML) <> "%s" (HTML <meta>) encoding mismatch' %
                      (encinfo.xml_encoding, encinfo.meta_encoding))
 
     # We're done. Add a final log entry, then return our result object
     if log:
-        log.info(u'Encoding (probably): %s (Mismatch: %s)',
+        log.info('Encoding (probably): %s (Mismatch: %s)',
                  encinfo.encoding, encinfo.mismatch)
     return encinfo
 
@@ -293,14 +293,14 @@ def guess_content_by_mediatype(media_type):
         return ContentTypes.Unknown;
 
     xml_application_types = [
-        ur'application/.*?\+xml',
-        u'application/xml',
-        u'application/xml-dtd',
-        u'application/xml-external-parsed-entity']
+        r'application/.*?\+xml',
+        'application/xml',
+        'application/xml-dtd',
+        'application/xml-external-parsed-entity']
     xml_text_types = [
-        ur'text\/.*?\+xml',
-        u'text/xml',
-        u'text/xml-external-parsed-entity']
+        r'text\/.*?\+xml',
+        'text/xml',
+        'text/xml-external-parsed-entity']
 
     media_type = media_type.strip().lower()
 
@@ -310,9 +310,9 @@ def guess_content_by_mediatype(media_type):
     elif media_type in xml_text_types or\
             re.match(xml_text_types[0], media_type, re.I|re.S|re.X):
         xmltype = ContentTypes.XMLText
-    elif media_type == u'text/html':
+    elif media_type == 'text/html':
         xmltype = ContentTypes.HTMLText
-    elif media_type.startswith(u'text/'):
+    elif media_type.startswith('text/'):
         xmltype = ContentTypes.Text
     else:
         xmltype = ContentTypes.Unknown
@@ -326,7 +326,7 @@ def guess_content(text):
     a different way.
     """
     try:
-        if text[:30].find(u'<?xml version=') != -1:
+        if text[:30].find('<?xml version=') != -1:
             return ContentTypes.XMLApplication
     except:
         pass
@@ -346,8 +346,8 @@ def find_in_http_response(response, log=None):
         encoding = encoding.lower()
 
     if log:
-        log.info(u'HTTP media_type: %s', media_type)
-        log.info(u'HTTP encoding: %s', encoding)
+        log.info('HTTP media_type: %s', media_type)
+        log.info('HTTP encoding: %s', encoding)
 
     return media_type, encoding
 
@@ -374,8 +374,8 @@ def find_in_xml(fp, log=None, fallback_to_default=True):
     which itself is based on Paul Prescotts recipe:
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52257
     """
-    if type(fp) in types.StringTypes:
-        fp = StringIO.StringIO(fp)
+    if type(fp) in (str,):
+        fp = io.StringIO(fp)
 
     ### detection using BOM
 
@@ -403,7 +403,7 @@ def find_in_xml(fp, log=None, fallback_to_default=True):
     ## if BOM detected, we're done :-)
     if bomDetection:
         if log:
-            log.info(u'XML BOM encoding: %s' % bomDetection)
+            log.info('XML BOM encoding: %s' % bomDetection)
         fp.seek(oldFP)
         return bomDetection
 
@@ -438,13 +438,13 @@ def find_in_xml(fp, log=None, fallback_to_default=True):
     if match:
         enc = match.group("encstr").lower()
         if log:
-            log.info(u'XML encoding="%s"' % enc)
+            log.info('XML encoding="%s"' % enc)
         return enc
     else:
         if fallback_to_default:
             if log:
-                log.info(u'XML encoding default utf-8')
-            return u'utf-8'
+                log.info('XML encoding default utf-8')
+            return 'utf-8'
         else:
             return None
 
@@ -457,7 +457,7 @@ def find_in_html(text, log=None):
         ``<meta http-equiv="Content-Type" content="media_type;
         charset=encoding"/>``
     """
-    ctmetas = re.findall(ur'''(<meta ("[^"]+"|'[^"]+'|[^'">])*
+    ctmetas = re.findall(r'''(<meta ("[^"]+"|'[^"]+'|[^'">])*
             http-equiv\s* = \s*['"]\s*Content-Type\s*['"]\s*
             .*?\/?>)
         ''', text, re.I|re.S|re.U|re.X)
@@ -465,7 +465,7 @@ def find_in_html(text, log=None):
     media_type = encoding = None
     if ctmetas:
         first = ctmetas[0][0]
-        value = re.findall(ur'''
+        value = re.findall(r'''
                 content\s*=\s*  # content=
                 ['"]\s*         # " or '
                 (.*?)           # find only value text
@@ -478,9 +478,9 @@ def find_in_html(text, log=None):
             if encoding:
                 encoding = encoding.lower()
             if log:
-                log.debug(u'HTML <meta>: %s', value[0])
-                log.info(u'HTML META media_type: %s', media_type)
-                log.info(u'HTML META encoding: %s', encoding)
+                log.debug('HTML <meta>: %s', value[0])
+                log.info('HTML META media_type: %s', media_type)
+                log.info('HTML META encoding: %s', encoding)
 
     return media_type, encoding
 
@@ -494,10 +494,10 @@ def default_for_media_type(media_type, log=None):
     If no default encoding is available returns ``None``.
     """
     defaultencodings = {
-        ContentTypes.XMLApplication: u'utf-8',
-        ContentTypes.XMLText: u'ascii',
-        ContentTypes.XMLText: u'iso-8859-1', # should be None?
-        ContentTypes.Text: u'iso-8859-1', # should be None?
+        ContentTypes.XMLApplication: 'utf-8',
+        ContentTypes.XMLText: 'ascii',
+        ContentTypes.XMLText: 'iso-8859-1', # should be None?
+        ContentTypes.Text: 'iso-8859-1', # should be None?
         ContentTypes.Unknown: None}
 
     texttype = guess_content_by_mediatype(media_type)
@@ -505,11 +505,11 @@ def default_for_media_type(media_type, log=None):
 
     if log:
         if not encoding:
-            log.debug(u'"%s" Media-Type has no default encoding',
+            log.debug('"%s" Media-Type has no default encoding',
                 media_type)
         else:
             log.debug(
-                u'Default encoding for Media Type "%s": %s',
+                'Default encoding for Media Type "%s": %s',
                 media_type, encoding)
     return encoding
 

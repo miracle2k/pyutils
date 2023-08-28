@@ -70,10 +70,10 @@ def line_locate_point(line, point):
     start = end = min_dist = seg = None
 
     it = iter(line.coords)
-    start = it.next()
+    start = next(it)
     while True:
         try:
-            end = it.next()
+            end = next(it)
         except StopIteration:
             break;
 

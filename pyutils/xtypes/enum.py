@@ -65,7 +65,7 @@ class EnumMetaclass(type):
     def __init__(cls, name, bases, dict):
         super(EnumMetaclass, cls).__init__(name, bases, dict)
         cls._members = []
-        for attr in dict.keys():
+        for attr in list(dict.keys()):
             if not (attr.startswith('__') and attr.endswith('__')):
                 enumval = EnumInstance(name, attr, dict[attr])
                 setattr(cls, attr, enumval)
@@ -74,7 +74,7 @@ class EnumMetaclass(type):
     def __getattr__(cls, name):
         if name == "__members__":
             return cls._members
-        raise AttributeError, name
+        raise AttributeError(name)
 
     def __setattr__(cls, name, value):
         # do not allow changing of enum values at runtime
@@ -94,7 +94,7 @@ class EnumMetaclass(type):
             yield getattr(cls, item)
 
     def has(self, other):
-        return other in self.__dict__.values()
+        return other in list(self.__dict__.values())
 
     def by_name(self, name, default=None):
         for option in self:
@@ -167,13 +167,12 @@ class EnumInstance(int):
         return int(self)
 
     def belongs(self, other):
-        return self in other.__dict__.values()
+        return self in list(other.__dict__.values())
 
-class ValueEnum:
+class ValueEnum(metaclass=FullEnumMetaclass):
     """
     The actual enum class that you should descend from.
     """
-    __metaclass__ = FullEnumMetaclass
 
 
 ################################################################################
@@ -229,7 +228,7 @@ def HashEnum(*names):
             return cmp(self.__value, other.__value)
         def __invert__(self):
             return constants[maximum - self.__value]
-        def __nonzero__(self):
+        def __bool__(self):
             return bool(self.__value)
         def __repr__(self):
             return str(names[self.__value])

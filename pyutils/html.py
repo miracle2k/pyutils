@@ -20,11 +20,11 @@ def decode(text):
     A similar attempt can be found here:
         http://groups.google.com/group/comp.lang.python/msg/ce3fc3330cbbac0a
     """
-    from htmlentitydefs import name2codepoint
-    if type(text) is unicode:
-        uchr = unichr
+    from html.entities import name2codepoint
+    if type(text) is str:
+        uchr = chr
     else:
-        uchr = lambda value: value > 255 and unichr(value) or chr(value)
+        uchr = lambda value: value > 255 and chr(value) or chr(value)
 
     def entitydecode(match, uchr=uchr):
         entity = match.group(1)
@@ -170,24 +170,24 @@ def sanitize_whitespace(text):
     u'with non-breaking spaces'
     """
     def repl(match):  # to avoid "unmatched group" error - basically "\1\2"
-        return (match.groups()[0] or u'') + (match.groups()[1] or u'')
+        return (match.groups()[0] or '') + (match.groups()[1] or '')
 
     # First, prepare the input string by removing non-breaking spaces
     # (&nbsp) - \xa0 in unicode. Handling this in the regex is much
     # more complex.
     result = force_unicode(text)
-    result = result.replace(u'\xa0', u' ')
+    result = result.replace('\xa0', ' ')
 
     result = sanitize_whitespace.pattern1.sub(repl, result)
-    return sanitize_whitespace.pattern2.sub(ur'\1', result)
+    return sanitize_whitespace.pattern2.sub(r'\1', result)
 
-sanitize_whitespace.pattern1 = re.compile(ur"""(?xu)
+sanitize_whitespace.pattern1 = re.compile(r"""(?xu)
     # spaces before and after a line - capture the linebreak in 1
     [\ \t]*(^|\r\n|\r|\n|$)[\ \t]* |
     # multiple spaces within a line - capture the replacement space in 2
     ([\ \t])[\ \t]+
 """)
-sanitize_whitespace.pattern2 = re.compile(ur"""(?xu)
+sanitize_whitespace.pattern2 = re.compile(r"""(?xu)
     # multiple linebreaks - allow max. 2 in sequence
     ((?:\r\n|\r|\n){2})(?:\r\n|\r|\n)+
 """)

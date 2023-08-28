@@ -95,7 +95,7 @@ def destination(lat, long, bearing, d):
     Returns a 2-tuple (lat, long), in degrees.
     """
     lat1 = radians(lat)
-    lon1 = radians(long)
+    lon1 = radians(int)
     bearing = radians(bearing)
 
     lat2 = asin(sin(lat1) * cos(d/R) + cos(lat1) * sin(d/R) * cos(bearing))

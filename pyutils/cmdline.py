@@ -46,7 +46,7 @@ def help(docstr, scriptname=None):
     if scriptname != False:
         if isinstance(scriptname, (tuple, dict, list)): scriptname = scriptname[0]
         docstr %= {'scriptname': os.path.basename(scriptname)}
-    print docstr
+    print(docstr)
     return 1
 
 
@@ -84,7 +84,7 @@ class Options(dict):
         def __new__(cls, name, bases, dict):
             # convert attributes defined in the class at into dict items
             items = {}
-            for name, value in dict.items():
+            for name, value in list(dict.items()):
                 if not (isinstance(value, types.FunctionType) or name.startswith('__')):
                     items[name] = value
                     del dict[name]
